@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Página inicial — Admin TN Zone</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+<div class="admin-shell">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div>
+        <h1>Página inicial</h1>
+        <div class="sub">Edite o banner e os textos da home sem mexer em código.</div>
+      </div>
+    </div>
+
+    <div class="panel glass" style="max-width:640px;">
+      <h3>Ordem das seções da home</h3>
+      <div class="sub" style="margin-bottom:16px;">Use as setas para reorganizar a ordem em que as seções aparecem na página inicial.</div>
+      <ul id="section-order-list" class="section-order-list"></ul>
+    </div>
+
+    <div class="panel glass" style="max-width:640px;">
+      <h3>Banner principal</h3>
+      <form id="home-form">
+        <div class="field">
+          <label>Imagem de fundo do banner</label>
+          <div class="image-upload-grid" id="banner-grid">
+            <div class="add-slot" id="add-banner-slot">+</div>
+          </div>
+          <input type="file" id="banner-input" accept="image/*" style="display:none;">
+        </div>
+        <div class="field"><label>Título do banner</label><input type="text" id="banner-title"></div>
+        <div class="field"><label>Subtítulo do banner</label><textarea id="banner-subtitle"></textarea></div>
+
+        <h3 style="margin-top:8px;">Identidade</h3>
+        <div class="field">
+          <label>Logo</label>
+          <div class="image-upload-grid" id="logo-grid">
+            <div class="add-slot" id="add-logo-slot">+</div>
+          </div>
+          <input type="file" id="logo-input" accept="image/*" style="display:none;">
+        </div>
+        <div class="field"><label>Nome da loja</label><input type="text" id="store-name"></div>
+        <div class="field"><label>Frase / tagline</label><input type="text" id="tagline"></div>
+
+        <h3 style="margin-top:8px;">Rodapé</h3>
+        <div class="field"><label>Texto do rodapé</label><textarea id="footer-text"></textarea></div>
+
+        <button type="submit" class="btn btn-primary btn-block">Salvar alterações</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin/admin-shell.js"></script>
+<script>
+let bannerImage = '', logoImage = '';
+const SECTION_LABELS = {
+  banner: 'Banner principal',
+  categorias: 'Categorias',
+  destaques: 'Produtos em destaque',
+  novidades: 'Novidades',
+  feedbacks: 'Avaliações de clientes',
+};
+const DEFAULT_SECTION_ORDER = ['banner', 'categorias', 'destaques', 'novidades', 'feedbacks'];
+let sectionOrder = [...DEFAULT_SECTION_ORDER];
+
+async function load() {
+  const admin = await initAdminPage('/admin/pagina-inicial');
+  if (!admin) return;
+
+  const { settings } = await API.get('/api/settings');
+  document.getElementById('banner-title').value = settings.banner_title || '';
+  document.getElementById('banner-subtitle').value = settings.banner_subtitle || '';
+  document.getElementById('store-name').value = settings.store_name || '';
+  document.getElementById('tagline').value = settings.tagline || '';
+  document.getElementById('footer-text').value = settings.footer_text || '';
+  bannerImage = settings.banner_image || '';
+  logoImage = settings.logo_url || '';
+  renderImages();
+
+  try {
+    const parsed = JSON.parse(settings.home_sections_order || '[]');
+    if (Array.isArray(parsed) && DEFAULT_SECTION_ORDER.every((k) => parsed.includes(k))) sectionOrder = parsed;
+  } catch { /* mantém a ordem padrão */ }
+  renderSectionOrder();
+
+  document.getElementById('add-banner-slot').addEventListener('click', () => document.getElementById('banner-input').click());
+  document.getElementById('add-logo-slot').addEventListener('click', () => document.getElementById('logo-input').click());
+  document.getElementById('banner-input').addEventListener('change', (e) => uploadTo(e, (f) => { bannerImage = f; renderImages(); }));
+  document.getElementById('logo-input').addEventListener('change', (e) => uploadTo(e, (f) => { logoImage = f; renderImages(); }));
+
+  document.getElementById('home-form').addEventListener('submit', save);
+}
+
+function renderSectionOrder() {
+  const list = document.getElementById('section-order-list');
+  list.innerHTML = sectionOrder.map((key, i) => `
+    <li class="section-order-item">
+      <span class="section-order-label">${escapeHtml(SECTION_LABELS[key] || key)}</span>
+      <div class="section-order-actions">
+        <button type="button" class="icon-btn" data-move="up" data-index="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Mover ${escapeHtml(SECTION_LABELS[key] || key)} para cima">↑</button>
+        <button type="button" class="icon-btn" data-move="down" data-index="${i}" ${i === sectionOrder.length - 1 ? 'disabled' : ''} aria-label="Mover ${escapeHtml(SECTION_LABELS[key] || key)} para baixo">↓</button>
+      </div>
+    </li>
+  `).join('');
+
+  list.querySelectorAll('button[data-move]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const i = Number(btn.dataset.index);
+      const dir = btn.dataset.move === 'up' ? -1 : 1;
+      const j = i + dir;
+      if (j < 0 || j >= sectionOrder.length) return;
+      [sectionOrder[i], sectionOrder[j]] = [sectionOrder[j], sectionOrder[i]];
+      renderSectionOrder();
+    });
+  });
+}
+
+function renderImages() {
+  renderSlot('banner-grid', 'add-banner-slot', bannerImage, () => { bannerImage = ''; renderImages(); });
+  renderSlot('logo-grid', 'add-logo-slot', logoImage, () => { logoImage = ''; renderImages(); });
+}
+
+function renderSlot(gridId, addSlotId, url, onRemove) {
+  const grid = document.getElementById(gridId);
+  grid.querySelectorAll('.img-slot').forEach(el => el.remove());
+  if (url) {
+    const div = document.createElement('div');
+    div.className = 'img-slot';
+    div.innerHTML = `<img src="${escapeHtml(url)}"><div class="remove">✕</div>`;
+    div.querySelector('.remove').addEventListener('click', onRemove);
+    grid.insertBefore(div, document.getElementById(addSlotId));
+  }
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadTo(e, cb) {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const dataUrl = await fileToDataUrl(file);
+    const { url } = await API.post('/api/admin/upload', { image: dataUrl });
+    cb(url);
+  } catch (err) { toast(err.message, 'error'); }
+  e.target.value = '';
+}
+
+async function save(e) {
+  e.preventDefault();
+  try {
+    await API.put('/api/admin/settings', {
+      banner_title: document.getElementById('banner-title').value,
+      banner_subtitle: document.getElementById('banner-subtitle').value,
+      banner_image: bannerImage,
+      store_name: document.getElementById('store-name').value,
+      tagline: document.getElementById('tagline').value,
+      footer_text: document.getElementById('footer-text').value,
+      logo_url: logoImage,
+      home_sections_order: sectionOrder,
+    });
+    toast('Página inicial atualizada.');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+load();
+</script>
+</body>
+</html>

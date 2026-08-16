@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produtos — Admin TN Zone</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+<div class="admin-shell">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div>
+        <h1>Produtos</h1>
+        <div class="sub">Adicione, edite ou remova produtos do catálogo.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openProductModal()">+ Adicionar produto</button>
+    </div>
+
+    <div class="panel glass">
+      <table class="admin-table">
+        <thead><tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Destaque</th><th>Status</th><th></th></tr></thead>
+        <tbody id="products-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Modal produto -->
+<div class="modal-overlay" id="product-modal" style="display:none;">
+  <div class="modal-card glass">
+    <h3 id="modal-title">Adicionar produto</h3>
+    <form id="product-form">
+      <input type="hidden" id="p-id">
+      <div class="form-grid-2">
+        <div class="field"><label>Nome *</label><input type="text" id="p-name" required></div>
+        <div class="field"><label>Categoria</label><select id="p-category"></select></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="field"><label>Tipo (para mensagem do WhatsApp)</label>
+          <select id="p-type">
+            <option value="tenis">Tênis</option>
+            <option value="camisa">Camisa</option>
+            <option value="calca">Calça</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+        <div class="field"><label>Estoque</label><input type="number" id="p-stock" min="0" value="0"></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="field"><label>Preço (R$) *</label><input type="number" id="p-price" min="0" step="0.01" required></div>
+        <div class="field"><label>Preço promocional (R$)</label><input type="number" id="p-promo" min="0" step="0.01"></div>
+      </div>
+      <div class="field"><label>Descrição</label><textarea id="p-description"></textarea></div>
+      <div class="field">
+        <label>Tamanhos (separados por vírgula)</label>
+        <input type="text" id="p-sizes" placeholder="Ex: 38, 39, 40, 41, 42">
+      </div>
+      <div class="field">
+        <label>Cores (separadas por vírgula)</label>
+        <input type="text" id="p-colors" placeholder="Ex: Preto, Branco, Azul">
+      </div>
+      <div class="field">
+        <label>Fotos</label>
+        <div class="image-upload-grid" id="image-grid">
+          <div class="add-slot" id="add-image-slot">+</div>
+        </div>
+        <input type="file" id="image-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple style="display:none;">
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="p-featured"><label for="p-featured">Produto em destaque</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="p-active" checked><label for="p-active">Produto ativo (visível no site)</label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeProductModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="save-btn">Salvar produto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin/admin-shell.js"></script>
+<script>
+let categories = [];
+let productImages = []; // filenames já enviados
+
+async function load() {
+  const admin = await initAdminPage('/admin/produtos');
+  if (!admin) return;
+
+  const cRes = await API.get('/api/categories');
+  categories = cRes.categories;
+  const sel = document.getElementById('p-category');
+  sel.innerHTML = '<option value="">Sem categoria</option>' + categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+
+  await loadProducts();
+
+  document.getElementById('add-image-slot').addEventListener('click', () => document.getElementById('image-input').click());
+  document.getElementById('image-input').addEventListener('change', handleImageUpload);
+  document.getElementById('product-form').addEventListener('submit', saveProduct);
+}
+
+async function loadProducts() {
+  const { products } = await API.get('/api/admin/products');
+  const tbody = document.getElementById('products-tbody');
+  if (!products.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text-faint);">Nenhum produto cadastrado ainda.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = products.map(p => {
+    const cat = categories.find(c => c.id === p.category_id);
+    const img = p.images[0] ? `<img class="thumb" src="${escapeHtml(p.images[0])}">` : '<div class="thumb" style="background:rgba(255,255,255,.06)"></div>';
+    return `
+      <tr>
+        <td>${img}</td>
+        <td>${escapeHtml(p.name)}</td>
+        <td>${cat ? escapeHtml(cat.name) : '—'}</td>
+        <td>${money(p.promo_price || p.price)}</td>
+        <td>${p.stock}</td>
+        <td>${p.featured ? '⭐' : '—'}</td>
+        <td><span class="pill ${p.active ? 'on' : 'off'}">${p.active ? 'Ativo' : 'Inativo'}</span></td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" title="Editar" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>✎</button>
+            <button class="icon-btn" title="${p.active ? 'Desativar' : 'Ativar'}" onclick="toggleActive(${p.id})">${p.active ? '⏸' : '▶'}</button>
+            <button class="icon-btn danger" title="Excluir" onclick="deleteProduct(${p.id}, '${escapeHtml(p.name)}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openProductModal() {
+  document.getElementById('modal-title').textContent = 'Adicionar produto';
+  document.getElementById('product-form').reset();
+  document.getElementById('p-id').value = '';
+  document.getElementById('p-active').checked = true;
+  productImages = [];
+  renderImageGrid();
+  document.getElementById('product-modal').style.display = 'flex';
+}
+
+function editProduct(p) {
+  document.getElementById('modal-title').textContent = 'Editar produto';
+  document.getElementById('p-id').value = p.id;
+  document.getElementById('p-name').value = p.name;
+  document.getElementById('p-category').value = p.category_id || '';
+  document.getElementById('p-type').value = p.type;
+  document.getElementById('p-stock').value = p.stock;
+  document.getElementById('p-price').value = p.price;
+  document.getElementById('p-promo').value = p.promo_price || '';
+  document.getElementById('p-description').value = p.description || '';
+  document.getElementById('p-sizes').value = (p.sizes || []).join(', ');
+  document.getElementById('p-colors').value = (p.colors || []).join(', ');
+  document.getElementById('p-featured').checked = !!p.featured;
+  document.getElementById('p-active').checked = !!p.active;
+  productImages = [...(p.images || [])];
+  renderImageGrid();
+  document.getElementById('product-modal').style.display = 'flex';
+}
+
+function closeProductModal() {
+  document.getElementById('product-modal').style.display = 'none';
+}
+
+function renderImageGrid() {
+  const grid = document.getElementById('image-grid');
+  grid.querySelectorAll('.img-slot').forEach(el => el.remove());
+  const addSlot = document.getElementById('add-image-slot');
+  productImages.forEach((url, i) => {
+    const div = document.createElement('div');
+    div.className = 'img-slot';
+    div.innerHTML = `<img src="${escapeHtml(url)}"><div class="remove" onclick="removeImage(${i})">✕</div>`;
+    grid.insertBefore(div, addSlot);
+  });
+}
+
+function removeImage(i) {
+  productImages.splice(i, 1);
+  renderImageGrid();
+}
+
+async function handleImageUpload(e) {
+  const files = [...e.target.files];
+  for (const file of files) {
+    const dataUrl = await fileToDataUrl(file);
+    try {
+      const { url } = await API.post('/api/admin/upload', { image: dataUrl });
+      productImages.push(url);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+  renderImageGrid();
+  e.target.value = '';
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveProduct(e) {
+  e.preventDefault();
+  const id = document.getElementById('p-id').value;
+  const payload = {
+    name: document.getElementById('p-name').value.trim(),
+    category_id: document.getElementById('p-category').value || null,
+    type: document.getElementById('p-type').value,
+    stock: Number(document.getElementById('p-stock').value) || 0,
+    price: Number(document.getElementById('p-price').value) || 0,
+    promo_price: document.getElementById('p-promo').value ? Number(document.getElementById('p-promo').value) : null,
+    description: document.getElementById('p-description').value.trim(),
+    sizes: document.getElementById('p-sizes').value.split(',').map(s => s.trim()).filter(Boolean),
+    colors: document.getElementById('p-colors').value.split(',').map(s => s.trim()).filter(Boolean),
+    images: productImages,
+    featured: document.getElementById('p-featured').checked,
+    active: document.getElementById('p-active').checked,
+  };
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    if (id) await API.put(`/api/admin/products/${id}`, payload);
+    else await API.post('/api/admin/products', payload);
+    toast('Produto salvo com sucesso.');
+    closeProductModal();
+    loadProducts();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar produto';
+  }
+}
+
+async function toggleActive(id) {
+  try {
+    await API.patch(`/api/admin/products/${id}/toggle`);
+    loadProducts();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function deleteProduct(id, name) {
+  const ok = await adminConfirm(`Excluir o produto "${name}"? Esta ação não pode ser desfeita.`, { title: 'Excluir produto', confirmLabel: 'Excluir' });
+  if (!ok) return;
+  try {
+    await API.del(`/api/admin/products/${id}`);
+    toast('Produto excluído.');
+    loadProducts();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+load();
+</script>
+</body>
+</html>

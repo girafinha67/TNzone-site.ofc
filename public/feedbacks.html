@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avaliações — TNzone</title>
+<meta name="description" content="Veja o que nossos clientes dizem sobre a TNzone e deixe sua avaliação.">
+<meta property="og:title" content="Avaliações — TNzone">
+<meta property="og:description" content="Veja o que nossos clientes dizem sobre a TNzone e deixe sua avaliação.">
+<meta property="og:image" content="/img/og.jpg">
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="container">
+  <div class="section">
+    <div class="section-head"><h2>Deixe sua avaliação</h2></div>
+    <div class="form-card glass" style="margin-bottom:48px;">
+      <form id="feedback-form">
+        <div class="field">
+          <label>Seu nome</label>
+          <input type="text" id="fb-name" required maxlength="120">
+        </div>
+        <div class="field">
+          <label>Avaliação</label>
+          <div class="star-picker" id="star-picker">
+            <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Produto (opcional)</label>
+          <select id="fb-product"><option value="">Selecionar produto...</option></select>
+        </div>
+        <div class="field">
+          <label>Comentário</label>
+          <textarea id="fb-comment" maxlength="1000" placeholder="Conte como foi sua experiência..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Enviar avaliação</button>
+        <p style="font-size:12.5px;color:var(--text-faint);margin-top:12px;">
+          Sua avaliação passa por uma revisão antes de aparecer publicamente no site.
+        </p>
+      </form>
+    </div>
+
+    <div class="section-head"><h2>Avaliações aprovadas</h2></div>
+    <div class="product-grid" id="reviews-grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));"></div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/layout.js"></script>
+<script>
+let rating = 0;
+
+async function init() {
+  renderLayout('feedbacks');
+
+  document.querySelectorAll('#star-picker span').forEach(star => {
+    star.addEventListener('click', () => {
+      rating = Number(star.dataset.v);
+      document.querySelectorAll('#star-picker span').forEach(s => s.classList.toggle('active', Number(s.dataset.v) <= rating));
+    });
+  });
+
+  try {
+    const { products } = await API.get('/api/products');
+    const sel = document.getElementById('fb-product');
+    products.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id; opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
+  } catch {}
+
+  loadReviews();
+
+  document.getElementById('feedback-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('fb-name').value.trim();
+    if (!name || !rating) return toast('Preencha seu nome e escolha uma avaliação em estrelas.', 'error');
+
+    try {
+      await API.post('/api/feedbacks', {
+        name,
+        rating,
+        comment: document.getElementById('fb-comment').value.trim(),
+        product_id: document.getElementById('fb-product').value || null,
+      });
+      toast('Avaliação enviada! Ela aparecerá após aprovação.');
+      e.target.reset();
+      rating = 0;
+      document.querySelectorAll('#star-picker span').forEach(s => s.classList.remove('active'));
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
+}
+
+async function loadReviews() {
+  try {
+    const { feedbacks } = await API.get('/api/feedbacks');
+    const grid = document.getElementById('reviews-grid');
+    if (!feedbacks.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="big">💬</div>Ainda não há avaliações aprovadas.</div>';
+    } else {
+      grid.innerHTML = feedbacks.map(f => `
+        <div class="review-card glass">
+          <div class="review-stars">${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}</div>
+          <div class="name">${escapeHtml(f.name)}</div>
+          ${f.comment ? `<div class="comment">${escapeHtml(f.comment)}</div>` : ''}
+          ${f.product_name ? `<div class="product-tag">Sobre: ${escapeHtml(f.product_name)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+  } catch {}
+}
+
+init();
+subscribeRealtime(() => loadReviews());
+</script>
+</body>
+</html>

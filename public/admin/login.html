@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Admin — TN Zone</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+<div class="auth-page">
+  <div class="auth-card glass">
+    <div class="logo"><span class="dot"></span> TN Zone</div>
+    <div class="sub">Acesso restrito ao painel administrativo</div>
+
+    <div id="form-error" style="display:none;" class="form-error"></div>
+
+    <form id="login-form">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="password" required autocomplete="current-password">
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="remember" checked>
+        <label for="remember">Lembrar de mim neste dispositivo</label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="submit-btn">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+(async () => {
+  try {
+    await API.get('/api/auth/me');
+    location.href = '/admin/dashboard';
+  } catch { /* não logado, segue na tela de login */ }
+})();
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errBox = document.getElementById('form-error');
+  errBox.style.display = 'none';
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+
+  try {
+    await API.post('/api/auth/login', {
+      email: document.getElementById('email').value.trim(),
+      password: document.getElementById('password').value,
+      remember: document.getElementById('remember').checked,
+    });
+    location.href = '/admin/dashboard';
+  } catch (err) {
+    errBox.textContent = err.message || 'Não foi possível entrar.';
+    errBox.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contato — TNzone</title>
+<meta name="description" content="Fale com a TNzone pelo WhatsApp — atendimento direto, sem robô. Acompanhe também no Instagram.">
+<meta property="og:title" content="Contato — TNzone">
+<meta property="og:description" content="Fale com a TNzone pelo WhatsApp — atendimento direto, sem robô.">
+<meta property="og:image" content="/img/og.jpg">
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="container">
+  <div class="section" style="max-width:640px;">
+    <div class="section-head"><div><h2>Fale com a gente</h2><div class="sub">Respondemos rápido — sem robô, sem letra miúda.</div></div></div>
+
+    <div class="form-card glass" style="max-width:none; display:flex; flex-direction:column; gap:16px;">
+      <a id="whatsapp-link" href="#" target="_blank" rel="noopener" class="btn btn-whatsapp btn-block">
+        💬 Chamar no WhatsApp
+      </a>
+      <a id="instagram-link" href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-block">
+        📷 Seguir no Instagram
+      </a>
+      <p style="font-size:13.5px;color:var(--text-dim);line-height:1.6;margin:0;">
+        O WhatsApp é o nosso canal de vendas e atendimento. Manda um print do modelo que você curtiu ou só chama pra bater um papo sobre o que está disponível — a gente confirma tamanho, foto real do par e valor antes de fechar qualquer coisa.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/layout.js"></script>
+<script>
+async function init() {
+  renderLayout('contato');
+  const waNumber = '5561986553995'; // fallback caso as configurações não carreguem
+  document.getElementById('whatsapp-link').href = `https://wa.me/${waNumber}`;
+  document.getElementById('instagram-link').href = 'https://instagram.com/TNzone.ofc';
+  document.getElementById('instagram-link').textContent = '📷 Seguir @TNzone.ofc';
+  try {
+    const { settings } = await API.get('/api/settings');
+    document.getElementById('whatsapp-link').href = `https://wa.me/${settings.whatsapp_number || waNumber}`;
+
+    const igHandle = (settings.instagram || 'TNzone.ofc').replace('@', '');
+    document.getElementById('instagram-link').href = `https://instagram.com/${encodeURIComponent(igHandle)}`;
+    document.getElementById('instagram-link').textContent = `📷 Seguir @${igHandle}`;
+  } catch {}
+}
+init();
+</script>
+</body>
+</html>

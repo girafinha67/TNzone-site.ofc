@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Admin TN Zone</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+<div class="admin-shell">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div>
+        <h1>Dashboard</h1>
+        <div class="sub">Visão geral da loja em tempo real.</div>
+      </div>
+    </div>
+
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="panel glass">
+      <h3>Produtos recentes</h3>
+      <table class="admin-table" id="recent-products-table">
+        <thead><tr><th>Produto</th><th>Preço</th><th>Adicionado em</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="panel glass">
+      <h3>Atividade recente</h3>
+      <table class="admin-table" id="activity-table">
+        <thead><tr><th>Ação</th><th>Admin</th><th>Quando</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin/admin-shell.js"></script>
+<script>
+const ACTION_LABELS = {
+  login: 'Login', logout: 'Logout', change_password: 'Senha alterada',
+  product_create: 'Produto criado', product_update: 'Produto editado',
+  product_delete: 'Produto excluído', product_toggle_active: 'Produto ativado/desativado',
+  category_create: 'Categoria criada', category_update: 'Categoria editada', category_delete: 'Categoria excluída',
+  feedback_status: 'Feedback moderado', feedback_delete: 'Feedback excluído',
+  settings_update: 'Configurações atualizadas', upload_image: 'Imagem enviada',
+};
+
+async function load() {
+  const admin = await initAdminPage('/admin/dashboard');
+  if (!admin) return;
+
+  const s = await API.get('/api/admin/dashboard');
+
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-card glass"><div class="label">Total de produtos</div><div class="value">${s.totalProducts}</div></div>
+    <div class="stat-card glass"><div class="label">Produtos ativos</div><div class="value">${s.activeProducts}</div></div>
+    <div class="stat-card glass"><div class="label">Esgotados</div><div class="value ${s.outOfStock > 0 ? 'warn' : ''}">${s.outOfStock}</div></div>
+    <div class="stat-card glass"><div class="label">Feedbacks pendentes</div><div class="value ${s.pendingFeedbacks > 0 ? 'danger' : ''}">${s.pendingFeedbacks}</div></div>
+    <div class="stat-card glass"><div class="label">Feedbacks aprovados</div><div class="value">${s.approvedFeedbacks}</div></div>
+  `;
+
+  const rpBody = document.querySelector('#recent-products-table tbody');
+  rpBody.innerHTML = s.recentProducts.length
+    ? s.recentProducts.map(p => `<tr><td>${escapeHtml(p.name)}</td><td>${money(p.price)}</td><td>${new Date(p.created_at).toLocaleString('pt-BR')}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="color:var(--text-faint);">Nenhum produto ainda.</td></tr>';
+
+  const actBody = document.querySelector('#activity-table tbody');
+  actBody.innerHTML = s.recentActivity.length
+    ? s.recentActivity.map(a => `<tr><td>${ACTION_LABELS[a.action] || a.action}</td><td>${escapeHtml(a.admin_email || '—')}</td><td>${new Date(a.created_at).toLocaleString('pt-BR')}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="color:var(--text-faint);">Nenhuma atividade ainda.</td></tr>';
+}
+
+load();
+</script>
+</body>
+</html>

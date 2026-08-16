@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produto — TNzone</title>
+<meta name="description" id="meta-description" content="Confira os produtos selecionados da TNzone.">
+<meta property="og:title" id="og-title" content="TNzone">
+<meta property="og:description" id="og-description" content="Confira os produtos selecionados da TNzone.">
+<meta property="og:image" id="og-image" content="/img/og.jpg">
+<meta property="og:type" content="product">
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="container" id="pd-root">
+  <div class="product-detail">
+    <div>
+      <div class="gallery-main skeleton"></div>
+    </div>
+    <div>
+      <div class="skeleton" style="height:20px;width:100px;margin-bottom:14px;"></div>
+      <div class="skeleton" style="height:34px;width:70%;margin-bottom:14px;"></div>
+      <div class="skeleton" style="height:24px;width:40%;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <section class="section" id="related-section" style="display:none;">
+    <div class="section-head">
+      <div>
+        <h2>Você também pode gostar</h2>
+        <div class="sub">Outros produtos da mesma categoria.</div>
+      </div>
+    </div>
+    <div class="product-grid" id="related-grid"></div>
+  </section>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/layout.js"></script>
+<script src="/js/product-card.js"></script>
+<script>
+const slug = new URLSearchParams(location.search).get('slug');
+let selectedSize = null, selectedColor = null, currentImages = [];
+
+async function load() {
+  renderLayout('produto');
+  if (!slug) return renderNotFound();
+
+  try {
+    const { product: p } = await API.get(`/api/products/${encodeURIComponent(slug)}`);
+    document.title = `${p.name} — TNzone`;
+    currentImages = p.images || [];
+    const outOfStock = p.stock <= 0;
+    const catLabel = { tenis: 'Tênis', camisa: 'Camisa', calca: 'Calça', outro: 'Produto' }[p.type] || '';
+
+    document.getElementById('pd-root').innerHTML = `
+      <div class="product-detail">
+        <div>
+          <div class="gallery-main">
+            ${currentImages.length ? `<img id="main-img" src="${escapeHtml(currentImages[0])}" alt="${escapeHtml(p.name)}">` : '<div class="placeholder" style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-faint);">Sem foto</div>'}
+          </div>
+          ${currentImages.length > 1 ? `
+            <div class="gallery-thumbs">
+              ${currentImages.map((img, i) => `<img src="${escapeHtml(img)}" class="${i === 0 ? 'active' : ''}" onclick="selectImage(${i})">`).join('')}
+            </div>` : ''}
+        </div>
+        <div>
+          <div class="pd-cat">${catLabel}</div>
+          <h1 class="pd-title">${escapeHtml(p.name)}</h1>
+          <div class="pd-price">
+            <span class="now">${money(p.promo_price || p.price)}</span>
+            ${p.promo_price ? `<span class="old">${money(p.price)}</span>` : ''}
+          </div>
+          <div class="availability ${outOfStock ? 'out' : 'in'}">
+            <span class="dot"></span> ${outOfStock ? 'Fora de estoque' : (p.stock > 0 && p.stock <= 3 ? `Últimas ${p.stock} unidades` : 'Disponível em estoque')}
+          </div>
+          ${p.description ? `<p class="pd-desc">${escapeHtml(p.description)}</p>` : ''}
+
+          ${p.sizes && p.sizes.length ? `
+            <div class="option-group">
+              <div class="label">Tamanho</div>
+              <div class="option-chips" id="size-chips">
+                ${p.sizes.map(s => `<button class="option-chip" data-size="${escapeHtml(s)}" onclick="pickSize(this)">${escapeHtml(s)}</button>`).join('')}
+              </div>
+            </div>` : ''}
+
+          ${p.colors && p.colors.length ? `
+            <div class="option-group">
+              <div class="label">Cor</div>
+              <div class="option-chips" id="color-chips">
+                ${p.colors.map(c => `<button class="option-chip" data-color="${escapeHtml(c)}" onclick="pickColor(this)">${escapeHtml(c)}</button>`).join('')}
+              </div>
+            </div>` : ''}
+
+          <div class="pd-actions">
+            <button class="btn btn-whatsapp btn-block" ${outOfStock ? 'disabled' : ''} onclick='buy(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+              💬 Comprar pelo WhatsApp
+            </button>
+            <button class="btn btn-ghost btn-block" id="share-btn" type="button">🔗 Compartilhar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    setSeo(p);
+    setJsonLd(p);
+    setupShare(p);
+    loadRelated(p);
+  } catch (e) {
+    renderNotFound();
+  }
+}
+
+function setSeo(p) {
+  const title = `${p.name} — TNzone`;
+  const description = (p.description && p.description.trim())
+    ? p.description.trim().slice(0, 160)
+    : `${p.name} disponível na TNzone. Confira preço, tamanhos e compre direto pelo WhatsApp.`;
+  const image = (p.images && p.images[0]) || '/img/og.jpg';
+
+  document.title = title;
+  document.getElementById('meta-description').setAttribute('content', description);
+  document.getElementById('og-title').setAttribute('content', title);
+  document.getElementById('og-description').setAttribute('content', description);
+  document.getElementById('og-image').setAttribute('content', image);
+}
+
+function setJsonLd(p) {
+  const existing = document.getElementById('product-jsonld');
+  if (existing) existing.remove();
+
+  const data = {
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    name: p.name,
+    description: p.description || undefined,
+    image: p.images && p.images.length ? p.images : undefined,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'BRL',
+      price: Number(p.promo_price || p.price || 0).toFixed(2),
+      availability: p.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: location.href,
+    },
+  };
+
+  const script = document.createElement('script');
+  script.id = 'product-jsonld';
+  script.type = 'application/ld+json';
+  script.textContent = JSON.stringify(data);
+  document.head.appendChild(script);
+}
+
+function setupShare(p) {
+  const btn = document.getElementById('share-btn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const shareData = { title: `${p.name} — TNzone`, text: `Dá uma olhada em ${p.name} na TNzone!`, url: location.href };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch { /* usuário cancelou */ }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(location.href);
+      toast('Link copiado!');
+    } catch {
+      toast('Não foi possível copiar o link.', 'error');
+    }
+  });
+}
+
+async function loadRelated(p) {
+  if (!p.category_id) return;
+  try {
+    const { products: all } = await API.get('/api/products');
+    const related = all.filter((x) => x.category_id === p.category_id && x.slug !== p.slug).slice(0, 4);
+    if (!related.length) return;
+    document.getElementById('related-section').style.display = '';
+    renderProductGrid('related-grid', related);
+  } catch { /* seção de relacionados é best-effort */ }
+}
+
+function selectImage(i) {
+  document.getElementById('main-img').src = currentImages[i];
+  document.querySelectorAll('.gallery-thumbs img').forEach((img, idx) => img.classList.toggle('active', idx === i));
+}
+
+function pickSize(btn) {
+  selectedSize = btn.dataset.size;
+  document.querySelectorAll('#size-chips .option-chip').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+function pickColor(btn) {
+  selectedColor = btn.dataset.color;
+  document.querySelectorAll('#color-chips .option-chip').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function buy(product) {
+  const extra = [selectedSize && `tamanho ${selectedSize}`, selectedColor && `cor ${selectedColor}`].filter(Boolean).join(', ');
+  const productForMsg = extra ? { ...product, name: `${product.name} (${extra})` } : product;
+  openWhatsappForProduct(productForMsg);
+}
+
+function renderNotFound() {
+  document.getElementById('pd-root').innerHTML = `
+    <div class="empty-state"><div class="big">🔍</div>Produto não encontrado.<br><br>
+    <a href="/catalogo" class="btn btn-primary">Voltar ao catálogo</a></div>
+  `;
+}
+
+load();
+</script>
+</body>
+</html>

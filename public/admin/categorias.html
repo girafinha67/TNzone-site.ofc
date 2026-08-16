@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Categorias — Admin TN Zone</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+<div class="admin-shell">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div>
+        <h1>Categorias</h1>
+        <div class="sub">Organize os produtos por categoria.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal()">+ Nova categoria</button>
+    </div>
+
+    <div class="panel glass">
+      <table class="admin-table">
+        <thead><tr><th>Imagem</th><th>Nome</th><th>Ordem</th><th>Status</th><th></th></tr></thead>
+        <tbody id="cat-tbody"><tr><td colspan="5">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modal" style="display:none;">
+  <div class="modal-card glass" style="max-width:420px;">
+    <h3 id="modal-title">Nova categoria</h3>
+    <form id="cat-form">
+      <input type="hidden" id="c-id">
+      <div class="field"><label>Nome *</label><input type="text" id="c-name" required></div>
+      <div class="field"><label>Ordem de exibição</label><input type="number" id="c-order" value="0"></div>
+      <div class="checkbox-row"><input type="checkbox" id="c-active" checked><label for="c-active">Categoria ativa</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin/admin-shell.js"></script>
+<script>
+async function load() {
+  const admin = await initAdminPage('/admin/categorias');
+  if (!admin) return;
+  await loadCategories();
+  document.getElementById('cat-form').addEventListener('submit', saveCategory);
+}
+
+async function loadCategories() {
+  const { categories } = await API.get('/api/categories?all=1');
+  const tbody = document.getElementById('cat-tbody');
+  if (!categories.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-faint);">Nenhuma categoria ainda.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = categories.map(c => `
+    <tr>
+      <td>${c.image ? `<img class="thumb" src="${escapeHtml(c.image)}">` : '<div class="thumb" style="background:rgba(255,255,255,.06)"></div>'}</td>
+      <td>${escapeHtml(c.name)}</td>
+      <td>${c.order_index}</td>
+      <td><span class="pill ${c.active ? 'on' : 'off'}">${c.active ? 'Ativa' : 'Inativa'}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" onclick='editCategory(${JSON.stringify(c).replace(/'/g, "&#39;")})'>✎</button>
+          <button class="icon-btn danger" onclick="deleteCategory(${c.id}, '${escapeHtml(c.name)}')">🗑</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openModal() {
+  document.getElementById('modal-title').textContent = 'Nova categoria';
+  document.getElementById('cat-form').reset();
+  document.getElementById('c-id').value = '';
+  document.getElementById('c-active').checked = true;
+  document.getElementById('modal').style.display = 'flex';
+}
+function editCategory(c) {
+  document.getElementById('modal-title').textContent = 'Editar categoria';
+  document.getElementById('c-id').value = c.id;
+  document.getElementById('c-name').value = c.name;
+  document.getElementById('c-order').value = c.order_index;
+  document.getElementById('c-active').checked = !!c.active;
+  document.getElementById('modal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+async function saveCategory(e) {
+  e.preventDefault();
+  const id = document.getElementById('c-id').value;
+  const payload = {
+    name: document.getElementById('c-name').value.trim(),
+    order_index: Number(document.getElementById('c-order').value) || 0,
+    active: document.getElementById('c-active').checked,
+  };
+  try {
+    if (id) await API.put(`/api/admin/categories/${id}`, payload);
+    else await API.post('/api/admin/categories', payload);
+    toast('Categoria salva.');
+    closeModal();
+    loadCategories();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function deleteCategory(id, name) {
+  const ok = await adminConfirm(`Excluir a categoria "${name}"? Os produtos vinculados ficarão sem categoria.`, { title: 'Excluir categoria', confirmLabel: 'Excluir' });
+  if (!ok) return;
+  try {
+    await API.del(`/api/admin/categories/${id}`);
+    toast('Categoria excluída.');
+    loadCategories();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+load();
+</script>
+</body>
+</html>

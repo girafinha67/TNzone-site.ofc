@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Admin — TN Zone</title></head>
+<body>
+<script src="/js/api.js"></script>
+<script>
+(async () => {
+  try {
+    await API.get('/api/auth/me');
+    location.href = '/admin/dashboard';
+  } catch {
+    location.href = '/admin/login';
+  }
+})();
+</script>
+</body>
+</html>

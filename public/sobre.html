@@ -75,6 +75,10 @@
 <script>
 async function init() {
   renderLayout('sobre');
+  // Fallback padrão — garante que o botão sempre redirecione, mesmo se a
+  // API de configurações falhar.
+  document.getElementById('insta-link').href = 'https://instagram.com/TNzone.ofc';
+  document.getElementById('insta-link').textContent = 'Seguir @TNzone.ofc';
   try {
     const { settings } = await API.get('/api/settings');
     const igHandle = (settings.instagram || 'TNzone.ofc').replace('@', '');

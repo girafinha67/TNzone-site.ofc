@@ -9,10 +9,15 @@ async function renderLayout(activePage) {
   let settings = {};
   let categories = [];
   try {
-    const [s, c] = await Promise.all([API.get('/api/settings'), API.get('/api/categories')]);
+    const s = await API.get('/api/settings');
     settings = s.settings || {};
-    categories = c.categories || [];
   } catch { /* segue com defaults */ }
+  try {
+    const c = await API.get('/api/categories');
+    categories = c.categories && c.categories.length ? c.categories : DEFAULT_CATEGORIES;
+  } catch {
+    categories = DEFAULT_CATEGORIES;
+  }
 
   const storeName = settings.store_name || 'TNzone';
   const storeSub = settings.store_subtitle || 'ATACADO E VAREJO · SÃO LUÍS — MA';

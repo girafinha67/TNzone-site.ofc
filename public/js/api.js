@@ -39,6 +39,16 @@ function money(value) {
   return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+// Categorias padrão (mesmas criadas pelo seed do banco em db.js). Usadas como
+// fallback sempre que a API de categorias falhar ou ainda não tiver dados —
+// assim os botões de categoria nunca ficam em branco/quebrados.
+const DEFAULT_CATEGORIES = [
+  { name: 'Tênis', slug: 'tenis' },
+  { name: 'Camisas', slug: 'camisas' },
+  { name: 'Calças', slug: 'calcas' },
+  { name: 'Novidades', slug: 'novidades' },
+];
+
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',

@@ -201,6 +201,11 @@ async function loadHome() {
   document.getElementById('whatsapp-cta-link').href = defaultWaLink;
   document.getElementById('hero-whatsapp-link').href = defaultWaLink;
 
+  // Link padrão do Instagram (sobrescrito abaixo com o handle das configurações,
+  // se houver) — garante que o botão sempre redirecione, mesmo se a API falhar.
+  document.getElementById('insta-cta-link').href = 'https://instagram.com/TNzone.ofc';
+  document.getElementById('insta-handle-text').textContent = '@TNzone.ofc';
+
   try {
     const { settings } = await API.get('/api/settings');
     if (settings.banner_title) document.getElementById('hero-title').textContent = settings.banner_title;
@@ -224,17 +229,22 @@ async function loadHome() {
   try {
     const { categories } = await API.get('/api/categories');
     const row = document.getElementById('category-row');
-    if (!categories.length) {
-      row.innerHTML = '';
-    } else {
-      row.innerHTML = categories.map(c => `
-        <a href="/catalogo?category=${encodeURIComponent(c.slug)}" class="category-card glass">
-          <div class="emoji">${categoryEmoji(c.slug)}</div>
-          <div class="name">${escapeHtml(c.name)}</div>
-        </a>
-      `).join('');
-    }
-  } catch {}
+    const list = categories && categories.length ? categories : DEFAULT_CATEGORIES;
+    row.innerHTML = list.map(c => `
+      <a href="/catalogo?category=${encodeURIComponent(c.slug)}" class="category-card glass">
+        <div class="emoji">${categoryEmoji(c.slug)}</div>
+        <div class="name">${escapeHtml(c.name)}</div>
+      </a>
+    `).join('');
+  } catch {
+    const row = document.getElementById('category-row');
+    row.innerHTML = DEFAULT_CATEGORIES.map(c => `
+      <a href="/catalogo?category=${encodeURIComponent(c.slug)}" class="category-card glass">
+        <div class="emoji">${categoryEmoji(c.slug)}</div>
+        <div class="name">${escapeHtml(c.name)}</div>
+      </a>
+    `).join('');
+  }
 
   try {
     const { products } = await API.get('/api/products?featured=1');

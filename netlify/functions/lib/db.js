@@ -196,7 +196,7 @@ async function seed() {
     whatsapp_number: '5561986553995',
     instagram: 'tnzone.ofc',
     email_contact: '',
-    logo_url: '/img/logo-mark.jpg',
+    logo_url: '/img/logo-mark.png',
     favicon_url: '/img/favicon.png',
     primary_color: '#375BFF',
     banner_title: 'A curadoria certa para o seu próximo par.',
@@ -210,27 +210,68 @@ async function seed() {
   }
 }
 
-async function ensureFirstAdmin() {
-  const count = (await get('SELECT COUNT(*) AS n FROM admins')).n;
-  if (Number(count) > 0) return;
+// Verifica senha usando o mesmo método de scrypt do lib/auth.js. Implementado
+// aqui (em vez de importar auth.js) para evitar dependência circular, já que
+// auth.js já faz require('./db').
+function verifyPasswordScrypt(password, salt, expectedHash) {
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  const a = Buffer.from(hash, 'hex');
+  const b = Buffer.from(expectedHash, 'hex');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
 
+// Garante que existe exatamente um administrador e que ele usa as
+// credenciais definidas em ADMIN_EMAIL / ADMIN_PASSWORD (Netlify env vars).
+//
+// - Se não houver nenhum admin: cria um novo com essas credenciais.
+// - Se já houver admin: ATUALIZA o registro existente (nunca cria outro),
+//   trocando e-mail/hash/salt somente quando eles realmente diferem do que
+//   está configurado — assim uma nova invocação não fica reescrevendo o
+//   banco à toa, mas o estado final sempre bate com as env vars atuais.
+// - Nunca grava a senha em texto puro (só o hash scrypt) nem em log.
+async function ensureAdmin() {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) {
     console.warn(
-      '[tn-zone] Nenhum admin cadastrado e ADMIN_EMAIL/ADMIN_PASSWORD não definidos.\n' +
-      '           Defina-os nas variáveis de ambiente do Netlify e faça um novo deploy/invocação.'
+      '[tn-zone] ADMIN_EMAIL/ADMIN_PASSWORD não definidos — configure-os nas ' +
+      'variáveis de ambiente do Netlify para criar/atualizar o administrador.'
     );
     return;
   }
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Sempre o admin mais antigo (menor id) — o sistema opera com um único
+  // administrador fixo.
+  const existing = await get('SELECT * FROM admins ORDER BY id ASC LIMIT 1');
+
+  if (!existing) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+    await run('INSERT INTO admins (email, password_hash, salt) VALUES (?, ?, ?)', [
+      normalizedEmail,
+      hash,
+      salt,
+    ]);
+    console.log(`[tn-zone] Administrador inicial criado: ${normalizedEmail}`);
+    return;
+  }
+
+  const emailMatches = existing.email === normalizedEmail;
+  const passwordMatches = verifyPasswordScrypt(password, existing.salt, existing.password_hash);
+
+  if (emailMatches && passwordMatches) return; // já está tudo em dia
+
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(password, salt, 64).toString('hex');
-  await run('INSERT INTO admins (email, password_hash, salt) VALUES (?, ?, ?)', [
-    email.toLowerCase().trim(),
+  await run('UPDATE admins SET email = ?, password_hash = ?, salt = ? WHERE id = ?', [
+    normalizedEmail,
     hash,
     salt,
+    existing.id,
   ]);
-  console.log(`[tn-zone] Administrador inicial criado: ${email}`);
+  console.log(`[tn-zone] Administrador atualizado para: ${normalizedEmail}`);
 }
 
 // Limpeza best-effort de dados voláteis antigos (sessões expiradas e hits de
@@ -251,7 +292,7 @@ function init() {
     initPromise = (async () => {
       await ensureSchema();
       await seed();
-      await ensureFirstAdmin();
+      await ensureAdmin();
     })().catch((err) => {
       initPromise = null; // permite tentar de novo na próxima invocação
       throw err;

@@ -9,10 +9,9 @@
   --text: #f4f2ef;
   --text-dim: #9a9aa0;
   --text-faint: #6a6a70;
-  /* Accent tokens repurposed to the Tênis Head red palette.
-     Names kept (blue/ice) for backward-compat with admin.css. */
-  --blue: #e01b22;
-  --blue-bright: #ff2b32;
+  /* Accent tokens — paleta azul claro. */
+  --blue: #2ea3ff;
+  --blue-bright: #5cc4ff;
   --ice: #f4f2ef;
   --white: #ffffff;
   --danger: #ff4d4d;
@@ -104,9 +103,9 @@ button { font-family: inherit; cursor: pointer; }
 .btn-primary {
   background: var(--blue);
   color: #fff;
-  box-shadow: 0 8px 26px rgba(224, 27, 34, 0.4);
+  box-shadow: 0 8px 26px rgba(46, 163, 255, 0.4);
 }
-.btn-primary:hover { background: var(--blue-bright); box-shadow: 0 10px 32px rgba(224, 27, 34, 0.55); }
+.btn-primary:hover { background: var(--blue-bright); box-shadow: 0 10px 32px rgba(46, 163, 255, 0.55); }
 
 .btn-ghost {
   background: transparent;
@@ -118,7 +117,7 @@ button { font-family: inherit; cursor: pointer; }
 .btn-whatsapp {
   background: var(--blue);
   color: #fff;
-  box-shadow: 0 8px 22px rgba(224, 27, 34, 0.35);
+  box-shadow: 0 8px 22px rgba(46, 163, 255, 0.35);
 }
 .btn-whatsapp:hover { background: var(--blue-bright); }
 
@@ -550,8 +549,8 @@ button { font-family: inherit; cursor: pointer; }
   display: inline-block;
   padding: 4px 10px;
   border-radius: var(--radius-full);
-  background: rgba(224, 27, 34, 0.12);
-  border: 1px solid rgba(224, 27, 34, 0.3);
+  background: rgba(46, 163, 255, 0.12);
+  border: 1px solid rgba(46, 163, 255, 0.3);
 }
 .step-card h3 { font-size: 16.5px; margin-bottom: 8px; }
 .step-card p { font-size: 13.5px; color: var(--text-dim); line-height: 1.55; margin: 0; }
@@ -568,7 +567,7 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border);
-  box-shadow: 0 0 0 1px rgba(224,27,34,0.18), 0 20px 60px rgba(224,27,34,0.18);
+  box-shadow: 0 0 0 1px rgba(46,163,255,0.18), 0 20px 60px rgba(46,163,255,0.18);
 }
 .about-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .about-copy .eyebrow { margin-bottom: 14px; }
@@ -644,11 +643,20 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(0,0,0,0.45);
   color: var(--text);
 }
-.hero .eyebrow::before {
-  content: '';
+.status-dot {
+  display: inline-block;
   width: 8px; height: 8px; border-radius: 50%;
-  background: var(--blue-bright);
-  box-shadow: 0 0 10px var(--blue-bright);
+  background: var(--danger);
+  box-shadow: 0 0 10px var(--danger);
+  transition: background .3s ease, box-shadow .3s ease;
+}
+.status-dot.open {
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+}
+.status-dot.closed {
+  background: var(--danger);
+  box-shadow: 0 0 10px var(--danger);
 }
 
 /* ---------- Botão flutuante do WhatsApp (estilo referência) ---------- */

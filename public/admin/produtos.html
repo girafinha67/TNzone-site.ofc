@@ -3,266 +3,142 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Produtos — Admin TN Zone</title>
-<meta name="robots" content="noindex">
-<link rel="stylesheet" href="/css/style.css">
-<link rel="stylesheet" href="/css/admin.css">
+<title>Produtos | Painel TN'zone</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext x='50' y='68' font-size='60' fill='white' text-anchor='middle' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../css/catalogo.css">
 </head>
-<body>
+<body class="admin-body">
 
 <div class="admin-shell">
-  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+  <aside class="admin-sidebar">
+    <div class="admin-logo">
+      
+      <span>TN'zone <em style="color:var(--gold-bright); font-style:normal;">Admin</em></span>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html">Dashboard</a>
+      <a href="produtos.html" class="active">Produtos</a>
+      <a href="categorias.html">Categorias</a>
+      <a href="feedbacks.html">Feedbacks</a>
+      <a href="analytics.html">Análise de usuários</a>
+      <a href="conteudo.html">Conteúdo da Home</a>
+      <a href="#" id="logoutBtn">Sair</a>
+    </nav>
+  </aside>
+
   <main class="admin-main">
     <div class="admin-topbar">
-      <div>
-        <h1>Produtos</h1>
-        <div class="sub">Adicione, edite ou remova produtos do catálogo.</div>
-      </div>
-      <button class="btn btn-primary" onclick="openProductModal()">+ Adicionar produto</button>
+      <h1>Produtos</h1>
+      <span class="admin-email" id="adminEmail"></span>
     </div>
 
-    <div class="panel glass">
+    <div class="admin-toolbar">
+      <div class="search-field" style="max-width:320px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" id="adminSearch" placeholder="Buscar produto..." style="padding:11px 14px 11px 40px;">
+      </div>
+      <button class="btn btn-gold" id="newProductBtn" type="button">+ Novo produto</button>
+    </div>
+
+    <div class="admin-table-wrap">
       <table class="admin-table">
-        <thead><tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Destaque</th><th>Status</th><th></th></tr></thead>
-        <tbody id="products-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
+        <thead><tr><th></th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="productsBody"><tr><td colspan="7">Carregando...</td></tr></tbody>
       </table>
     </div>
   </main>
 </div>
 
 <!-- Modal produto -->
-<div class="modal-overlay" id="product-modal" style="display:none;">
-  <div class="modal-card glass">
-    <h3 id="modal-title">Adicionar produto</h3>
-    <form id="product-form">
+<div class="modal-backdrop" id="productModalBackdrop">
+  <div class="modal-card" style="max-width:720px;">
+    <h3 id="productModalTitle">Novo produto</h3>
+    <form id="productForm">
       <input type="hidden" id="p-id">
-      <div class="form-grid-2">
-        <div class="field"><label>Nome *</label><input type="text" id="p-name" required></div>
-        <div class="field"><label>Categoria</label><select id="p-category"></select></div>
-      </div>
-      <div class="form-grid-2">
-        <div class="field"><label>Tipo (para mensagem do WhatsApp)</label>
-          <select id="p-type">
-            <option value="tenis">Tênis</option>
-            <option value="camisa">Camisa</option>
-            <option value="calca">Calça</option>
-            <option value="outro">Outro</option>
-          </select>
+      <div class="form-grid">
+        <div class="form-field full">
+          <label for="p-name">Nome</label>
+          <input type="text" id="p-name" required>
         </div>
-        <div class="field"><label>Estoque</label><input type="number" id="p-stock" min="0" value="0"></div>
-      </div>
-      <div class="form-grid-2">
-        <div class="field"><label>Preço (R$) *</label><input type="number" id="p-price" min="0" step="0.01" required></div>
-        <div class="field"><label>Preço promocional (R$)</label><input type="number" id="p-promo" min="0" step="0.01"></div>
-      </div>
-      <div class="field"><label>Descrição</label><textarea id="p-description"></textarea></div>
-      <div class="field">
-        <label>Tamanhos (separados por vírgula)</label>
-        <input type="text" id="p-sizes" placeholder="Ex: 38, 39, 40, 41, 42">
-      </div>
-      <div class="field">
-        <label>Cores (separadas por vírgula)</label>
-        <input type="text" id="p-colors" placeholder="Ex: Preto, Branco, Azul">
-      </div>
-      <div class="field">
-        <label>Fotos</label>
-        <div class="image-upload-grid" id="image-grid">
-          <div class="add-slot" id="add-image-slot">+</div>
+        <div class="form-field full">
+          <label for="p-description">Descrição</label>
+          <textarea id="p-description"></textarea>
         </div>
-        <input type="file" id="image-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple style="display:none;">
-      </div>
-      <div class="checkbox-row">
-        <input type="checkbox" id="p-featured"><label for="p-featured">Produto em destaque</label>
-      </div>
-      <div class="checkbox-row">
-        <input type="checkbox" id="p-active" checked><label for="p-active">Produto ativo (visível no site)</label>
+        <div class="form-field full">
+          <label>Categorias</label>
+          <div class="category-tags" id="categoryTags"></div>
+        </div>
+        <div class="form-field">
+          <label for="p-brand">Marca</label>
+          <input type="text" id="p-brand" placeholder="Ex.: Nike, Adidas...">
+        </div>
+        <div class="form-field">
+          <label for="p-price">Preço (R$)</label>
+          <input type="number" id="p-price" min="0" step="0.01" required>
+        </div>
+        <div class="form-field">
+          <label for="p-promo">Preço promocional (R$)</label>
+          <input type="number" id="p-promo" min="0" step="0.01" placeholder="Opcional">
+        </div>
+        <div class="form-field">
+          <label for="p-stock">Estoque</label>
+          <input type="number" id="p-stock" min="0" step="1" value="0">
+        </div>
+        <div class="form-field">
+          <label for="p-sku">SKU</label>
+          <input type="text" id="p-sku" placeholder="Opcional">
+        </div>
+        <div class="form-field">
+          <label for="p-sizes">Tamanhos (separados por vírgula)</label>
+          <input type="text" id="p-sizes" placeholder="Ex.: 38, 39, 40">
+        </div>
+        <div class="form-field">
+          <label for="p-colors">Cores (separadas por vírgula)</label>
+          <input type="text" id="p-colors" placeholder="Ex.: Preto, Branco">
+        </div>
+        <div class="form-field full">
+          <label for="p-tags">Tags / palavras-chave (separadas por vírgula)</label>
+          <input type="text" id="p-tags" placeholder="Ex.: lançamento, corrida, streetwear">
+        </div>
+        <div class="form-field full">
+          <label>Imagens do produto</label>
+          <div class="image-drop" id="imageDrop">Clique para enviar imagens (PNG, JPG, WEBP ou GIF, até 8MB cada)</div>
+          <input type="file" id="imageInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple style="display:none;">
+          <div class="image-preview-row" id="imagePreviewRow"></div>
+        </div>
+        <div class="form-field full" style="flex-direction:row; gap:24px; align-items:center;">
+          <label class="checkbox-row"><input type="checkbox" id="p-featured"> Produto em destaque</label>
+          <label class="checkbox-row"><input type="checkbox" id="p-active" checked> Ativo no catálogo</label>
+        </div>
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn btn-ghost" onclick="closeProductModal()">Cancelar</button>
-        <button type="submit" class="btn btn-primary" id="save-btn">Salvar produto</button>
+        <button type="button" class="btn btn-ghost" id="productCancelBtn">Cancelar</button>
+        <button type="submit" class="btn btn-gold" id="productSaveBtn">Salvar produto</button>
       </div>
     </form>
   </div>
 </div>
 
-<script src="/js/api.js"></script>
-<script src="/js/admin/admin-shell.js"></script>
-<script>
-let categories = [];
-let productImages = []; // filenames já enviados
+<!-- Modal confirmação de exclusão -->
+<div class="modal-backdrop" id="deleteModalBackdrop">
+  <div class="modal-card" style="max-width:420px;">
+    <h3>Excluir produto?</h3>
+    <p class="confirm-text">Essa ação não pode ser desfeita. As imagens do produto também serão removidas do armazenamento.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="deleteCancelBtn">Cancelar</button>
+      <button type="button" class="btn btn-gold" style="background:#e05a5a; border-color:#e05a5a;" id="deleteConfirmBtn">Excluir</button>
+    </div>
+  </div>
+</div>
 
-async function load() {
-  const admin = await initAdminPage('/admin/produtos');
-  if (!admin) return;
-
-  const cRes = await API.get('/api/categories');
-  categories = cRes.categories;
-  const sel = document.getElementById('p-category');
-  sel.innerHTML = '<option value="">Sem categoria</option>' + categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-
-  await loadProducts();
-
-  document.getElementById('add-image-slot').addEventListener('click', () => document.getElementById('image-input').click());
-  document.getElementById('image-input').addEventListener('change', handleImageUpload);
-  document.getElementById('product-form').addEventListener('submit', saveProduct);
-}
-
-async function loadProducts() {
-  const { products } = await API.get('/api/admin/products');
-  const tbody = document.getElementById('products-tbody');
-  if (!products.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text-faint);">Nenhum produto cadastrado ainda.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = products.map(p => {
-    const cat = categories.find(c => c.id === p.category_id);
-    const img = p.images[0] ? `<img class="thumb" src="${escapeHtml(p.images[0])}">` : '<div class="thumb" style="background:rgba(255,255,255,.06)"></div>';
-    return `
-      <tr>
-        <td>${img}</td>
-        <td>${escapeHtml(p.name)}</td>
-        <td>${cat ? escapeHtml(cat.name) : '—'}</td>
-        <td>${money(p.promo_price || p.price)}</td>
-        <td>${p.stock}</td>
-        <td>${p.featured ? '⭐' : '—'}</td>
-        <td><span class="pill ${p.active ? 'on' : 'off'}">${p.active ? 'Ativo' : 'Inativo'}</span></td>
-        <td>
-          <div class="row-actions">
-            <button class="icon-btn" title="Editar" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>✎</button>
-            <button class="icon-btn" title="${p.active ? 'Desativar' : 'Ativar'}" onclick="toggleActive(${p.id})">${p.active ? '⏸' : '▶'}</button>
-            <button class="icon-btn danger" title="Excluir" onclick="deleteProduct(${p.id}, '${escapeHtml(p.name)}')">🗑</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function openProductModal() {
-  document.getElementById('modal-title').textContent = 'Adicionar produto';
-  document.getElementById('product-form').reset();
-  document.getElementById('p-id').value = '';
-  document.getElementById('p-active').checked = true;
-  productImages = [];
-  renderImageGrid();
-  document.getElementById('product-modal').style.display = 'flex';
-}
-
-function editProduct(p) {
-  document.getElementById('modal-title').textContent = 'Editar produto';
-  document.getElementById('p-id').value = p.id;
-  document.getElementById('p-name').value = p.name;
-  document.getElementById('p-category').value = p.category_id || '';
-  document.getElementById('p-type').value = p.type;
-  document.getElementById('p-stock').value = p.stock;
-  document.getElementById('p-price').value = p.price;
-  document.getElementById('p-promo').value = p.promo_price || '';
-  document.getElementById('p-description').value = p.description || '';
-  document.getElementById('p-sizes').value = (p.sizes || []).join(', ');
-  document.getElementById('p-colors').value = (p.colors || []).join(', ');
-  document.getElementById('p-featured').checked = !!p.featured;
-  document.getElementById('p-active').checked = !!p.active;
-  productImages = [...(p.images || [])];
-  renderImageGrid();
-  document.getElementById('product-modal').style.display = 'flex';
-}
-
-function closeProductModal() {
-  document.getElementById('product-modal').style.display = 'none';
-}
-
-function renderImageGrid() {
-  const grid = document.getElementById('image-grid');
-  grid.querySelectorAll('.img-slot').forEach(el => el.remove());
-  const addSlot = document.getElementById('add-image-slot');
-  productImages.forEach((url, i) => {
-    const div = document.createElement('div');
-    div.className = 'img-slot';
-    div.innerHTML = `<img src="${escapeHtml(url)}"><div class="remove" onclick="removeImage(${i})">✕</div>`;
-    grid.insertBefore(div, addSlot);
-  });
-}
-
-function removeImage(i) {
-  productImages.splice(i, 1);
-  renderImageGrid();
-}
-
-async function handleImageUpload(e) {
-  const files = [...e.target.files];
-  for (const file of files) {
-    const dataUrl = await fileToDataUrl(file);
-    try {
-      const { url } = await API.post('/api/admin/upload', { image: dataUrl });
-      productImages.push(url);
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  }
-  renderImageGrid();
-  e.target.value = '';
-}
-
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function saveProduct(e) {
-  e.preventDefault();
-  const id = document.getElementById('p-id').value;
-  const payload = {
-    name: document.getElementById('p-name').value.trim(),
-    category_id: document.getElementById('p-category').value || null,
-    type: document.getElementById('p-type').value,
-    stock: Number(document.getElementById('p-stock').value) || 0,
-    price: Number(document.getElementById('p-price').value) || 0,
-    promo_price: document.getElementById('p-promo').value ? Number(document.getElementById('p-promo').value) : null,
-    description: document.getElementById('p-description').value.trim(),
-    sizes: document.getElementById('p-sizes').value.split(',').map(s => s.trim()).filter(Boolean),
-    colors: document.getElementById('p-colors').value.split(',').map(s => s.trim()).filter(Boolean),
-    images: productImages,
-    featured: document.getElementById('p-featured').checked,
-    active: document.getElementById('p-active').checked,
-  };
-
-  const btn = document.getElementById('save-btn');
-  btn.disabled = true; btn.textContent = 'Salvando...';
-  try {
-    if (id) await API.put(`/api/admin/products/${id}`, payload);
-    else await API.post('/api/admin/products', payload);
-    toast('Produto salvo com sucesso.');
-    closeProductModal();
-    loadProducts();
-  } catch (err) {
-    toast(err.message, 'error');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Salvar produto';
-  }
-}
-
-async function toggleActive(id) {
-  try {
-    await API.patch(`/api/admin/products/${id}/toggle`);
-    loadProducts();
-  } catch (err) { toast(err.message, 'error'); }
-}
-
-async function deleteProduct(id, name) {
-  const ok = await adminConfirm(`Excluir o produto "${name}"? Esta ação não pode ser desfeita.`, { title: 'Excluir produto', confirmLabel: 'Excluir' });
-  if (!ok) return;
-  try {
-    await API.del(`/api/admin/products/${id}`);
-    toast('Produto excluído.');
-    loadProducts();
-  } catch (err) { toast(err.message, 'error'); }
-}
-
-load();
-</script>
+<script src="../js/api.js"></script>
+<script src="../js/admin-common.js"></script>
+<script src="../js/category-tags.js"></script>
+<script src="../js/admin-produtos.js"></script>
 </body>
 </html>

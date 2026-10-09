@@ -3,127 +3,102 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Categorias — Admin TN Zone</title>
-<meta name="robots" content="noindex">
-<link rel="stylesheet" href="/css/style.css">
-<link rel="stylesheet" href="/css/admin.css">
+<title>Categorias | Painel TN'zone</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext x='50' y='68' font-size='60' fill='white' text-anchor='middle' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../css/catalogo.css">
 </head>
-<body>
+<body class="admin-body">
 
 <div class="admin-shell">
-  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+  <aside class="admin-sidebar">
+    <div class="admin-logo">
+      
+      <span>TN'zone <em style="color:var(--gold-bright); font-style:normal;">Admin</em></span>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html">Dashboard</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="categorias.html" class="active">Categorias</a>
+      <a href="feedbacks.html">Feedbacks</a>
+      <a href="analytics.html">Análise de usuários</a>
+      <a href="conteudo.html">Conteúdo da Home</a>
+      <a href="#" id="logoutBtn">Sair</a>
+    </nav>
+  </aside>
+
   <main class="admin-main">
     <div class="admin-topbar">
-      <div>
-        <h1>Categorias</h1>
-        <div class="sub">Organize os produtos por categoria.</div>
-      </div>
-      <button class="btn btn-primary" onclick="openModal()">+ Nova categoria</button>
+      <h1>Categorias</h1>
+      <span class="admin-email" id="adminEmail"></span>
     </div>
 
-    <div class="panel glass">
+    <div class="admin-toolbar">
+      <span></span>
+      <button class="btn btn-gold" id="newCategoryBtn" type="button">+ Nova categoria</button>
+    </div>
+
+    <div class="admin-table-wrap">
       <table class="admin-table">
-        <thead><tr><th>Imagem</th><th>Nome</th><th>Ordem</th><th>Status</th><th></th></tr></thead>
-        <tbody id="cat-tbody"><tr><td colspan="5">Carregando...</td></tr></tbody>
+        <thead><tr><th>Ordem</th><th>Nome</th><th>Slug</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="categoriesBody"><tr><td colspan="5">Carregando...</td></tr></tbody>
       </table>
     </div>
   </main>
 </div>
 
-<div class="modal-overlay" id="modal" style="display:none;">
-  <div class="modal-card glass" style="max-width:420px;">
-    <h3 id="modal-title">Nova categoria</h3>
-    <form id="cat-form">
-      <input type="hidden" id="c-id">
-      <div class="field"><label>Nome *</label><input type="text" id="c-name" required></div>
-      <div class="field"><label>Ordem de exibição</label><input type="number" id="c-order" value="0"></div>
-      <div class="checkbox-row"><input type="checkbox" id="c-active" checked><label for="c-active">Categoria ativa</label></div>
+<!-- Modal categoria -->
+<div class="modal-backdrop" id="categoryModalBackdrop">
+  <div class="modal-card">
+    <h3 id="categoryModalTitle">Nova categoria</h3>
+    <form id="categoryForm">
+      <input type="hidden" id="cat-id">
+      <div class="form-field full">
+        <label for="cat-name">Nome</label>
+        <input type="text" id="cat-name" required>
+      </div>
+      <div class="form-field full">
+        <label for="cat-image">Imagem (URL)</label>
+        <input type="text" id="cat-image" placeholder="https://…">
+      </div>
+      <div class="form-field full">
+        <label for="cat-description">Descrição curta (aparece no card da home)</label>
+        <input type="text" id="cat-description" maxlength="140" placeholder="Ex.: Modelos leves para o dia a dia">
+      </div>
+      <div class="form-field full">
+        <label for="cat-order">Ordem de exibição</label>
+        <input type="number" id="cat-order" min="0" value="0">
+      </div>
+      <label class="checkbox-row" style="margin-bottom:6px;">
+        <input type="checkbox" id="cat-active" checked>
+        Categoria ativa (visível no catálogo)
+      </label>
       <div class="modal-actions">
-        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Salvar</button>
+        <button type="button" class="btn btn-ghost" id="categoryCancelBtn">Cancelar</button>
+        <button type="submit" class="btn btn-gold" id="categorySaveBtn">Salvar</button>
       </div>
     </form>
   </div>
 </div>
 
-<script src="/js/api.js"></script>
-<script src="/js/admin/admin-shell.js"></script>
-<script>
-async function load() {
-  const admin = await initAdminPage('/admin/categorias');
-  if (!admin) return;
-  await loadCategories();
-  document.getElementById('cat-form').addEventListener('submit', saveCategory);
-}
+<!-- Modal confirmação de exclusão -->
+<div class="modal-backdrop" id="deleteModalBackdrop">
+  <div class="modal-card" style="max-width:420px;">
+    <h3>Excluir categoria?</h3>
+    <p class="confirm-text">Os produtos dessa categoria não serão excluídos, apenas ficarão sem categoria. Essa ação não pode ser desfeita.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="deleteCancelBtn">Cancelar</button>
+      <button type="button" class="btn btn-gold" style="background:#e05a5a; border-color:#e05a5a;" id="deleteConfirmBtn">Excluir</button>
+    </div>
+  </div>
+</div>
 
-async function loadCategories() {
-  const { categories } = await API.get('/api/categories?all=1');
-  const tbody = document.getElementById('cat-tbody');
-  if (!categories.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-faint);">Nenhuma categoria ainda.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = categories.map(c => `
-    <tr>
-      <td>${c.image ? `<img class="thumb" src="${escapeHtml(c.image)}">` : '<div class="thumb" style="background:rgba(255,255,255,.06)"></div>'}</td>
-      <td>${escapeHtml(c.name)}</td>
-      <td>${c.order_index}</td>
-      <td><span class="pill ${c.active ? 'on' : 'off'}">${c.active ? 'Ativa' : 'Inativa'}</span></td>
-      <td>
-        <div class="row-actions">
-          <button class="icon-btn" onclick='editCategory(${JSON.stringify(c).replace(/'/g, "&#39;")})'>✎</button>
-          <button class="icon-btn danger" onclick="deleteCategory(${c.id}, '${escapeHtml(c.name)}')">🗑</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function openModal() {
-  document.getElementById('modal-title').textContent = 'Nova categoria';
-  document.getElementById('cat-form').reset();
-  document.getElementById('c-id').value = '';
-  document.getElementById('c-active').checked = true;
-  document.getElementById('modal').style.display = 'flex';
-}
-function editCategory(c) {
-  document.getElementById('modal-title').textContent = 'Editar categoria';
-  document.getElementById('c-id').value = c.id;
-  document.getElementById('c-name').value = c.name;
-  document.getElementById('c-order').value = c.order_index;
-  document.getElementById('c-active').checked = !!c.active;
-  document.getElementById('modal').style.display = 'flex';
-}
-function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
-async function saveCategory(e) {
-  e.preventDefault();
-  const id = document.getElementById('c-id').value;
-  const payload = {
-    name: document.getElementById('c-name').value.trim(),
-    order_index: Number(document.getElementById('c-order').value) || 0,
-    active: document.getElementById('c-active').checked,
-  };
-  try {
-    if (id) await API.put(`/api/admin/categories/${id}`, payload);
-    else await API.post('/api/admin/categories', payload);
-    toast('Categoria salva.');
-    closeModal();
-    loadCategories();
-  } catch (err) { toast(err.message, 'error'); }
-}
-
-async function deleteCategory(id, name) {
-  const ok = await adminConfirm(`Excluir a categoria "${name}"? Os produtos vinculados ficarão sem categoria.`, { title: 'Excluir categoria', confirmLabel: 'Excluir' });
-  if (!ok) return;
-  try {
-    await API.del(`/api/admin/categories/${id}`);
-    toast('Categoria excluída.');
-    loadCategories();
-  } catch (err) { toast(err.message, 'error'); }
-}
-
-load();
-</script>
+<script src="../js/api.js"></script>
+<script src="../js/admin-common.js"></script>
+<script src="../js/admin-categorias.js"></script>
 </body>
 </html>

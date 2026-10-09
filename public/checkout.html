@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkout | TN'zone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0a0a0a;--paper:#fff;--surface:#f2f2ef;--line:#deddd6;--mute:#707069;--ok:#176b42;box-sizing:border-box}
+*{box-sizing:inherit}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,sans-serif}a{color:inherit;text-decoration:none}
+.wrap{max-width:980px;margin:auto;padding:24px}header{border-bottom:1px solid var(--line)}header .wrap{display:flex;justify-content:space-between;align-items:center}.logo{font:700 1.25rem "Space Grotesk";display:inline-flex;align-items:center}.logo-img{height:28px}
+main{padding:60px 0}.layout{display:grid;grid-template-columns:1fr 1fr;gap:32px}.box{border:1px solid var(--line);padding:26px;background:#fff}.box h1,.box h2{font-family:"Space Grotesk";margin-top:0}.product{display:flex;gap:16px;align-items:center;padding-bottom:20px;border-bottom:1px solid var(--line)}.product img{width:100px;height:100px;object-fit:cover;background:var(--surface)}.price{font:700 1.2rem "Space Grotesk"}label{display:block;font-size:.78rem;color:var(--mute);margin:15px 0 6px}input,textarea,select{width:100%;border:1px solid var(--line);padding:13px;font:inherit;background:#fff}textarea{min-height:90px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}button{width:100%;border:0;background:var(--ink);color:#fff;padding:15px;font:700 .9rem "Space Grotesk";cursor:pointer;margin-top:20px}.msg{padding:15px;margin-top:16px;background:var(--surface);display:none}.success{border:1px solid #b7d7c6;background:#f1faf5;color:var(--ok)}.pix{text-align:center}.pix img{width:260px;max-width:100%;margin:15px auto}.copy{background:#fff;color:var(--ink);border:1px solid var(--line);word-break:break-all;text-align:left}.hidden{display:none!important}.status{font:700 1.1rem "Space Grotesk";margin:10px 0}.cart-item{display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}.cart-item img{width:64px;height:64px;object-fit:cover;background:var(--surface)}.cart-item small{color:var(--mute)}@media(max-width:760px){.layout{grid-template-columns:1fr}.row{grid-template-columns:1fr}main{padding:30px 0}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="/"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></a><a href="/catalogo.html">← Catálogo</a></div></header>
+<main><div class="wrap">
+<div id="loading">Carregando produto…</div>
+<div id="app" class="layout hidden">
+<section class="box" id="singleBox">
+  <h1>Seu pedido</h1>
+  <div id="product" class="product"></div>
+  <label>Quantidade</label><input id="quantity" type="number" min="1" max="20" value="1">
+  <div class="row"><div><label>Tamanho</label><input id="size" placeholder="Ex.: 39"></div><div><label>Cor</label><input id="color" placeholder="Ex.: Preto"></div></div>
+  <div style="margin-top:22px">Total: <span id="total" class="price"></span></div>
+</section>
+<section class="box hidden" id="cartBox">
+  <h1>Seu carrinho</h1>
+  <div id="cartItems"></div>
+  <div style="margin-top:22px">Total: <span id="cartTotal" class="price"></span></div>
+</section>
+<section class="box">
+  <h2>Seus dados</h2>
+  <form id="form">
+    <label>Nome completo</label><input id="name" autocomplete="name" required>
+    <label>CPF</label><input id="cpf" inputmode="numeric" autocomplete="off" required>
+    <label>E-mail</label><input id="email" type="email" autocomplete="email" required>
+    <label>Telefone / WhatsApp</label><input id="phone" inputmode="tel" autocomplete="tel" placeholder="(99) 99999-9999" required>
+    <label>Recado ou observação</label><textarea id="additionalData" placeholder="Endereço, recado, o que quiser avisar"></textarea>
+    <button id="pay">GERAR PAGAMENTO PIX</button>
+  </form>
+  <div id="error" class="msg"></div>
+</section>
+</div>
+
+<section id="payment" class="box pix hidden" style="margin-top:32px">
+  <div id="paymentStatus" class="status">Aguardando pagamento…</div>
+  <p>Escaneie o QR Code ou use o Pix Copia e Cola.</p>
+  <img id="qr" alt="QR Code Pix">
+  <textarea id="pixCode" class="copy" readonly></textarea>
+  <button id="copy">COPIAR PIX</button>
+  <div id="paid" class="msg success">Pagamento confirmado! Seu pedido está garantido. ❤️</div>
+</section>
+</div></main>
+<script src="/js/mock-api.js"></script>
+<script src="/js/shop.js"></script>
+<script>
+(function(){
+'use strict';
+const qs=new URLSearchParams(location.search), slug=qs.get('produto')||qs.get('slug');
+const cartMode = qs.get('modo')==='carrinho';
+const $=id=>document.getElementById(id);
+let product=null, order=null, timer=null;
+const money=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function showError(msg){$('error').textContent=msg;$('error').style.display='block'}
+function price(){return Number(product.promo_price!=null?product.promo_price:product.price)}
+function render(){
+  const img=product.images&&product.images[0]?'<img src="'+product.images[0]+'" alt="">':'<div style="width:100px;height:100px;background:#f2f2ef"></div>';
+  $('product').innerHTML=img+'<div><strong>'+product.name+'</strong><div>'+money(price())+'</div><small>Estoque: '+product.stock+'</small></div>';
+  updateTotal(); $('app').classList.remove('hidden'); $('loading').classList.add('hidden');
+}
+function updateTotal(){const q=Math.max(1,Math.min(20,Number($('quantity').value)||1));$('quantity').value=q;$('total').textContent=money(price()*q)}
+$('quantity').addEventListener('input',updateTotal);
+async function load(){
+  if(!slug){$('loading').textContent='Nenhum produto escolhido.';return}
+  try{const r=await fetch('/api/products/'+encodeURIComponent(slug));const d=await r.json();if(!r.ok)throw new Error(d.error);product=d.product;
+    const qQty=Number(qs.get('quantity'));if(qQty>0)$('quantity').value=Math.min(20,qQty);
+    if(qs.get('size'))$('size').value=qs.get('size');
+    if(qs.get('color'))$('color').value=qs.get('color');
+    render()}
+  catch(e){$('loading').textContent=e.message||'Não deu pra carregar o produto.'}
+}
+function cartItemHtml(it){
+  const img=it.image?'<img src="'+it.image+'" alt="">':'<div style="width:64px;height:64px;background:#f2f2ef"></div>';
+  const meta=[it.size?'Tam. '+it.size:null,it.color||null].filter(Boolean).join(' · ');
+  return '<div class="cart-item">'+img+'<div><strong>'+it.name+'</strong> × '+it.quantity+(meta?'<br><small>'+meta+'</small>':'')+'</div><div style="margin-left:auto">'+money(it.price*it.quantity)+'</div></div>';
+}
+function loadCart(){
+  const cart=RSShop.getCart();
+  if(!cart.length){$('loading').textContent='Seu carrinho está vazio.';return}
+  $('cartItems').innerHTML=cart.map(cartItemHtml).join('');
+  $('cartTotal').textContent=money(RSShop.cartSubtotal(cart));
+  $('singleBox').classList.add('hidden');$('cartBox').classList.remove('hidden');
+  $('app').classList.remove('hidden');$('loading').classList.add('hidden');
+}
+$('form').addEventListener('submit',async e=>{
+ e.preventDefault();$('pay').disabled=true;$('pay').textContent='CRIANDO COBRANÇA…';$('error').style.display='none';
+ try{
+  let r,d;
+  if(cartMode){
+   const items=RSShop.getCart().map(it=>({productId:it.productId,quantity:it.quantity,size:it.size,color:it.color}));
+   r=await fetch('/api/payments/picpay/create-cart',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    items,name:$('name').value,cpf:$('cpf').value,email:$('email').value,phone:$('phone').value,
+    additionalData:$('additionalData').value,sessionId:sessionStorage.getItem('rshoes-session-id')||null
+   })});
+   d=await r.json();if(!r.ok)throw new Error(d.error||'Não deu pra gerar o pagamento. Tenta de novo');
+   RSShop.clearCart();
+  } else {
+   r=await fetch('/api/payments/picpay/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    productId:product.id,quantity:Number($('quantity').value),name:$('name').value,cpf:$('cpf').value,email:$('email').value,phone:$('phone').value,
+    size:$('size').value,color:$('color').value,additionalData:$('additionalData').value,sessionId:sessionStorage.getItem('rshoes-session-id')||null
+   })});
+   d=await r.json();if(!r.ok)throw new Error(d.error||'Não deu pra gerar o pagamento. Tenta de novo');
+  }
+  order=d;
+  $('payment').classList.remove('hidden');$('qr').src=d.pix.qrCodeBase64||('data:image/png;base64,'+d.pix.qrCodeBase64);
+  $('pixCode').value=d.pix.qrCode||'';$('paymentStatus').textContent='Aguardando pagamento…';startPolling();
+ }catch(err){showError(err.message)}
+ finally{$('pay').disabled=false;$('pay').textContent='GERAR PAGAMENTO PIX'}
+});
+$('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('pixCode').value);$('copy').textContent='PIX COPIADO ✓';setTimeout(()=>$('copy').textContent='COPIAR PIX',1800)}catch(e){$('pixCode').select()}});
+function startPolling(){
+ if(timer)clearInterval(timer);
+ const check=async()=>{try{const r=await fetch('/api/payments/orders/'+encodeURIComponent(order.id));const d=await r.json();if(!r.ok)return;
+   order=d;
+   if(d.status==='PAID'){clearInterval(timer);$('paymentStatus').textContent='Pagamento confirmado';$('paid').style.display='block';return}
+   if(['EXPIRED','CANCELED','CANCELLED','DENIED','ERROR'].includes(d.status)){clearInterval(timer);$('paymentStatus').textContent='Pagamento '+d.status;return}
+   $('paymentStatus').textContent='Aguardando pagamento…';
+ }catch(e){}};
+ check();timer=setInterval(check,4000);
+}
+if(cartMode){loadCart();}else{load();}
+})();
+</script>
+</body>
+</html>

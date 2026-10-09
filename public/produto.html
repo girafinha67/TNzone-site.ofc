@@ -2,222 +2,320 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Produto — TNzone</title>
-<meta name="description" id="meta-description" content="Confira os produtos selecionados da TNzone.">
-<meta property="og:title" id="og-title" content="TNzone">
-<meta property="og:description" id="og-description" content="Confira os produtos selecionados da TNzone.">
-<meta property="og:image" id="og-image" content="/img/og.jpg">
-<meta property="og:type" content="product">
-<link rel="icon" href="/img/favicon.png">
-<link rel="stylesheet" href="/css/style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Produto | TN'zone</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff'/%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%230a0a0a' stroke-width='6'/%3E%3Ctext x='50' y='68' font-size='56' fill='%230a0a0a' text-anchor='middle' font-family='Arial' font-weight='bold'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+.pdp{padding:clamp(120px,18vw,168px) 0 clamp(64px,10vw,120px)}
+.pdp-layout{display:grid;grid-template-columns:1fr;gap:40px}
+@media(min-width:900px){.pdp-layout{grid-template-columns:1.1fr 1fr;gap:64px}}
+.gallery-main{aspect-ratio:1/1;background:var(--surface);overflow:hidden;position:relative}
+.gallery-main img{width:100%;height:100%;object-fit:cover}
+.gallery-thumbs{display:flex;gap:10px;margin-top:12px}
+.gallery-thumbs button{width:70px;height:70px;background:var(--surface);border:1.5px solid transparent;overflow:hidden;flex-shrink:0}
+.gallery-thumbs button.active{border-color:var(--ink)}
+.gallery-thumbs img{width:100%;height:100%;object-fit:cover}
+.pdp-brand{font-size:.78rem;letter-spacing:.06em;color:var(--mute);text-transform:uppercase}
+.pdp-name{font-size:clamp(1.6rem,4vw,2.2rem);margin-top:6px}
+.pdp-rating{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:.82rem;color:var(--mute)}
+.pdp-rating svg{width:13px;height:13px;fill:var(--ink);stroke:none}
+.pdp-price-row{display:flex;align-items:baseline;gap:12px;margin-top:18px}
+.pdp-price{font-family:'Space Grotesk';font-size:1.7rem}
+.pdp-price.has-promo{color:var(--sale)}
+.pdp-price-old{font-size:1.05rem;color:var(--mute-dark);text-decoration:line-through}
+.pdp-installment{font-size:.8rem;color:var(--mute);margin-top:6px}
+.pdp-section{margin-top:26px}
+.pdp-section h4{font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.opt-row{display:flex;flex-wrap:wrap;gap:9px}
+.opt-btn{border:1px solid var(--line);padding:10px 16px;font-size:.85rem;transition:.2s}
+.opt-btn.active{border-color:var(--ink);background:var(--ink);color:#fff}
+.pdp-qty{display:flex;align-items:center;border:1px solid var(--line);width:fit-content}
+.pdp-qty button{width:38px;height:42px;font-size:1.1rem}
+.pdp-qty span{min-width:34px;text-align:center;font-size:.92rem}
+.pdp-actions{display:flex;flex-direction:column;gap:12px;margin-top:28px}
+.pdp-actions .row{display:flex;gap:12px}
+.pdp-actions .btn-outline{border-color:var(--ink)}
+.fav-inline{width:52px;flex-shrink:0;border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.fav-inline svg{width:18px;height:18px}
+.fav-inline.active svg{fill:var(--ink)}
+.pdp-meta-list{margin-top:26px;border-top:1px solid var(--line)}
+.pdp-meta-list div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:.85rem}
+.pdp-desc{margin-top:30px;color:var(--mute);font-size:.95rem;line-height:1.7}
+.stock-note{font-size:.8rem;margin-top:10px}
+.stock-note.low{color:var(--sale)}
+.related .products{margin-top:0}
+</style>
 </head>
 <body>
 
-<div id="site-header"></div>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="shoe" viewBox="0 0 200 100" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 78 C8 62 22 58 34 56 C50 53 58 44 66 34 C74 24 84 18 98 18 C110 18 116 24 122 30 C130 38 140 42 154 44 C170 46 186 52 190 66 C192 74 188 80 178 82 L20 82 C12 82 8 82 8 78 Z"/>
+  </symbol>
+</svg>
 
-<div class="container" id="pd-root">
-  <div class="product-detail">
-    <div>
-      <div class="gallery-main skeleton"></div>
+<div class="topbar" id="topbar"><div class="topbar-track" id="topbarTrack"><span>TN'zone</span></div></div>
+
+<header class="site-header" id="siteHeader">
+  <div class="bar">
+    <a class="logo" href="/index.html"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></a>
+    <nav class="main">
+      <a href="/index.html">Home</a>
+      <a href="/catalogo.html">Loja</a>
+      <a href="/index.html#sobre">Sobre nós</a>
+    </nav>
+    <div class="h-actions">
+      <button class="icon-btn search-only" id="searchToggle" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      <a class="icon-btn" href="/favoritos.html" aria-label="Favoritos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2 5 5.4 5c2 0 3.4 1 4.6 2.6C11.2 6 12.6 5 14.6 5 18 5 19.6 8.4 18 11.7 15.5 16.4 12 21 12 21z"/></svg><span class="icon-badge" id="favBadge">0</span></a>
+      <button class="icon-btn" id="cartToggle" aria-label="Carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16l-1.5 12h-13z"/><path d="M8 7a4 4 0 0 1 8 0"/></svg><span class="icon-badge" id="cartBadge">0</span></button>
+      <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
-    <div>
-      <div class="skeleton" style="height:20px;width:100px;margin-bottom:14px;"></div>
-      <div class="skeleton" style="height:34px;width:70%;margin-bottom:14px;"></div>
-      <div class="skeleton" style="height:24px;width:40%;"></div>
+  </div>
+</header>
+
+<nav class="mobile-menu" id="mobileMenu">
+  <button class="mm-close" id="mmClose" aria-label="Fechar menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <a href="/index.html">Home</a>
+  <a href="/catalogo.html">Loja</a>
+  <a href="/favoritos.html">Favoritos</a>
+</nav>
+
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-panel">
+    <div class="search-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Buscar produtos, marcas…" autocomplete="off">
+      <button class="search-close" id="searchClose" aria-label="Fechar busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
+    <div class="search-results" id="searchResults"></div>
   </div>
 </div>
 
-<div class="container">
-  <section class="section" id="related-section" style="display:none;">
-    <div class="section-head">
+<div class="drawer-scrim" id="cartScrim"></div>
+<aside class="drawer" id="cartDrawer" aria-label="Carrinho">
+  <div class="drawer-head"><h2>Carrinho</h2><button class="drawer-close" id="cartClose" aria-label="Fechar carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="drawer-body" id="cartDrawerBody"></div>
+  <div class="drawer-foot" id="cartDrawerFoot"></div>
+</aside>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<main class="pdp">
+  <div class="wrap">
+    <p class="crumbs" id="crumbs"><a href="/index.html">Home</a> / <a href="/catalogo.html">Loja</a> / <span id="crumbName">…</span></p>
+    <div id="loadingMsg" style="padding:60px 0;color:var(--mute)">Carregando produto…</div>
+    <div id="pdpApp" class="pdp-layout" style="display:none">
       <div>
-        <h2>Você também pode gostar</h2>
-        <div class="sub">Outros produtos da mesma categoria.</div>
+        <div class="gallery-main" id="galleryMain"></div>
+        <div class="gallery-thumbs" id="galleryThumbs"></div>
+      </div>
+      <div>
+        <div class="pdp-brand" id="pBrand"></div>
+        <h1 class="pdp-name" id="pName"></h1>
+        <div class="pdp-price-row">
+          <span class="pdp-price" id="pPrice"></span>
+          <span class="pdp-price-old" id="pPriceOld" style="display:none"></span>
+        </div>
+        <p class="pdp-installment" id="pInstallment"></p>
+
+        <div class="pdp-section" id="sizeSection" style="display:none">
+          <h4>Tamanho</h4>
+          <div class="opt-row" id="sizeOptions"></div>
+        </div>
+        <div class="pdp-section" id="colorSection" style="display:none">
+          <h4>Cor</h4>
+          <div class="opt-row" id="colorOptions"></div>
+        </div>
+        <div class="pdp-section">
+          <h4>Quantidade</h4>
+          <div class="pdp-qty">
+            <button data-act="dec" aria-label="Diminuir">−</button>
+            <span id="qtyVal">1</span>
+            <button data-act="inc" aria-label="Aumentar">+</button>
+          </div>
+          <p class="stock-note" id="stockNote"></p>
+        </div>
+
+        <div class="pdp-actions">
+          <div class="row">
+            <button class="btn btn-dark" id="addCartBtn">ADICIONAR AO CARRINHO</button>
+            <button class="fav-inline" id="favBtn" aria-label="Favoritar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2 5 5.4 5c2 0 3.4 1 4.6 2.6C11.2 6 12.6 5 14.6 5 18 5 19.6 8.4 18 11.7 15.5 16.4 12 21 12 21z"/></svg></button>
+          </div>
+          <button class="btn btn-outline" id="buyNowBtn">COMPRAR AGORA</button>
+        </div>
+
+        <div class="pdp-meta-list">
+          <div><span>Estoque</span><span id="metaStock"></span></div>
+          <div><span>Envio</span><span>A gente combina com você no WhatsApp, depois da compra</span></div>
+          <div><span>Trocas</span><span>Até 7 dias depois de receber</span></div>
+        </div>
+
+        <p class="pdp-desc" id="pDesc"></p>
       </div>
     </div>
-    <div class="product-grid" id="related-grid"></div>
+    <p id="notFoundMsg" style="display:none;padding:60px 0;color:var(--mute)">Não achamos esse produto ou ele não está mais disponível. <a href="/catalogo.html" style="text-decoration:underline">Voltar pra loja</a>.</p>
+  </div>
+
+  <section class="section related" id="relatedSection" style="display:none">
+    <div class="wrap">
+      <div class="sec-head"><h2>Você também pode gostar</h2></div>
+      <div class="products" id="relatedGrid"></div>
+    </div>
   </section>
-</div>
+</main>
 
-<div id="site-footer"></div>
+<footer class="site-footer">
+  <div class="wrap f-top">
+    <div class="f-brand"><div class="logo"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></div><p>Tênis e streetwear escolhidos a dedo em São Luís, Maranhão.</p></div>
+    <div><h4>Loja</h4><ul><li><a href="/catalogo.html">Todos os produtos</a></li><li><a href="/favoritos.html">Favoritos</a></li></ul></div>
+    <div><h4>Atendimento</h4><ul><li><a href="https://instagram.com/TNzone.ofc" target="_blank" rel="noopener">Fale conosco</a></li></ul></div>
+    <div><h4>Empresa</h4><ul><li><a href="/index.html#sobre">Sobre nós</a></li></ul></div>
+  </div>
+  <div class="wrap f-bottom"><span>© 2026 TN'zone. Todos os direitos reservados.</span><span>São Luís, MA</span></div>
+</footer>
 
-<script src="/js/api.js"></script>
-<script src="/js/layout.js"></script>
-<script src="/js/product-card.js"></script>
+<script src="/js/mock-api.js"></script>
+<script src="/js/shop.js"></script>
 <script>
-const slug = new URLSearchParams(location.search).get('slug');
-let selectedSize = null, selectedColor = null, currentImages = [];
+(function(){
+  var money = RSShop.money;
+  var qs = new URLSearchParams(location.search);
+  var slug = qs.get('slug') || qs.get('produto');
+  var product = null;
+  var selected = { size: null, color: null, qty: 1 };
 
-async function load() {
-  renderLayout('produto');
-  if (!slug) return renderNotFound();
+  if(!slug){ showNotFound(); return; }
 
-  try {
-    const { product: p } = await API.get(`/api/products/${encodeURIComponent(slug)}`);
-    document.title = `${p.name} — TNzone`;
-    currentImages = p.images || [];
-    const outOfStock = p.stock <= 0;
-    const catLabel = { tenis: 'Tênis', camisa: 'Camisa', calca: 'Calça', outro: 'Produto' }[p.type] || '';
-
-    document.getElementById('pd-root').innerHTML = `
-      <div class="product-detail">
-        <div>
-          <div class="gallery-main">
-            ${currentImages.length ? `<img id="main-img" src="${escapeHtml(currentImages[0])}" alt="${escapeHtml(p.name)}">` : '<div class="placeholder" style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-faint);">Sem foto</div>'}
-          </div>
-          ${currentImages.length > 1 ? `
-            <div class="gallery-thumbs">
-              ${currentImages.map((img, i) => `<img src="${escapeHtml(img)}" class="${i === 0 ? 'active' : ''}" onclick="selectImage(${i})">`).join('')}
-            </div>` : ''}
-        </div>
-        <div>
-          <div class="pd-cat">${catLabel}</div>
-          <h1 class="pd-title">${escapeHtml(p.name)}</h1>
-          <div class="pd-price">
-            <span class="now">${money(p.promo_price || p.price)}</span>
-            ${p.promo_price ? `<span class="old">${money(p.price)}</span>` : ''}
-          </div>
-          <div class="availability ${outOfStock ? 'out' : 'in'}">
-            <span class="dot"></span> ${outOfStock ? 'Fora de estoque' : (p.stock > 0 && p.stock <= 3 ? `Últimas ${p.stock} unidades` : 'Disponível em estoque')}
-          </div>
-          ${p.description ? `<p class="pd-desc">${escapeHtml(p.description)}</p>` : ''}
-
-          ${p.sizes && p.sizes.length ? `
-            <div class="option-group">
-              <div class="label">Tamanho</div>
-              <div class="option-chips" id="size-chips">
-                ${p.sizes.map(s => `<button class="option-chip" data-size="${escapeHtml(s)}" onclick="pickSize(this)">${escapeHtml(s)}</button>`).join('')}
-              </div>
-            </div>` : ''}
-
-          ${p.colors && p.colors.length ? `
-            <div class="option-group">
-              <div class="label">Cor</div>
-              <div class="option-chips" id="color-chips">
-                ${p.colors.map(c => `<button class="option-chip" data-color="${escapeHtml(c)}" onclick="pickColor(this)">${escapeHtml(c)}</button>`).join('')}
-              </div>
-            </div>` : ''}
-
-          <div class="pd-actions">
-            <button class="btn btn-whatsapp btn-block" ${outOfStock ? 'disabled' : ''} onclick='buy(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
-              💬 Comprar pelo WhatsApp
-            </button>
-            <button class="btn btn-ghost btn-block" id="share-btn" type="button">🔗 Compartilhar</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    setSeo(p);
-    setJsonLd(p);
-    setupShare(p);
-    loadRelated(p);
-  } catch (e) {
-    renderNotFound();
+  function showNotFound(){
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('notFoundMsg').style.display = 'block';
   }
-}
 
-function setSeo(p) {
-  const title = `${p.name} — TNzone`;
-  const description = (p.description && p.description.trim())
-    ? p.description.trim().slice(0, 160)
-    : `${p.name} disponível na TNzone. Confira preço, tamanhos e compre direto pelo WhatsApp.`;
-  const image = (p.images && p.images[0]) || '/img/og.jpg';
+  fetch('/api/products/' + encodeURIComponent(slug))
+    .then(function(r){ if(!r.ok) throw new Error('not found'); return r.json(); })
+    .then(function(data){ product = data.product; render(); })
+    .catch(showNotFound);
 
-  document.title = title;
-  document.getElementById('meta-description').setAttribute('content', description);
-  document.getElementById('og-title').setAttribute('content', title);
-  document.getElementById('og-description').setAttribute('content', description);
-  document.getElementById('og-image').setAttribute('content', image);
-}
+  function render(){
+    document.title = product.name + ' | TN\'zone';
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('pdpApp').style.display = 'grid';
+    document.getElementById('crumbName').textContent = product.name;
+    document.getElementById('pBrand').textContent = product.brand || '';
+    document.getElementById('pName').textContent = product.name;
+    document.getElementById('pDesc').textContent = product.description || 'Sem descrição adicional para este produto.';
 
-function setJsonLd(p) {
-  const existing = document.getElementById('product-jsonld');
-  if (existing) existing.remove();
-
-  const data = {
-    '@context': 'https://schema.org/',
-    '@type': 'Product',
-    name: p.name,
-    description: p.description || undefined,
-    image: p.images && p.images.length ? p.images : undefined,
-    offers: {
-      '@type': 'Offer',
-      priceCurrency: 'BRL',
-      price: Number(p.promo_price || p.price || 0).toFixed(2),
-      availability: p.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-      url: location.href,
-    },
-  };
-
-  const script = document.createElement('script');
-  script.id = 'product-jsonld';
-  script.type = 'application/ld+json';
-  script.textContent = JSON.stringify(data);
-  document.head.appendChild(script);
-}
-
-function setupShare(p) {
-  const btn = document.getElementById('share-btn');
-  if (!btn) return;
-  btn.addEventListener('click', async () => {
-    const shareData = { title: `${p.name} — TNzone`, text: `Dá uma olhada em ${p.name} na TNzone!`, url: location.href };
-    if (navigator.share) {
-      try { await navigator.share(shareData); } catch { /* usuário cancelou */ }
-      return;
+    var images = product.images && product.images.length ? product.images : [null];
+    var mainEl = document.getElementById('galleryMain');
+    var thumbsEl = document.getElementById('galleryThumbs');
+    function setMain(i){
+      mainEl.innerHTML = images[i]
+        ? '<img src="'+images[i]+'" alt="'+product.name+'">'
+        : '<svg viewBox="0 0 200 100" style="width:70%;margin:auto;color:#c9c9c1"><use href="#shoe"/></svg>';
+      thumbsEl.querySelectorAll('button').forEach(function(b,idx){ b.classList.toggle('active', idx===i); });
     }
-    try {
-      await navigator.clipboard.writeText(location.href);
-      toast('Link copiado!');
-    } catch {
-      toast('Não foi possível copiar o link.', 'error');
+    thumbsEl.innerHTML = images.length > 1 ? images.map(function(img,i){
+      return '<button data-i="'+i+'">'+(img?'<img src="'+img+'" alt="">':'')+'</button>';
+    }).join('') : '';
+    thumbsEl.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return; setMain(Number(b.dataset.i));
+    });
+    setMain(0);
+
+    var priceEl = document.getElementById('pPrice'), oldEl = document.getElementById('pPriceOld');
+    if(product.promo_price){
+      priceEl.textContent = money(product.promo_price); priceEl.classList.add('has-promo');
+      oldEl.textContent = money(product.price); oldEl.style.display = '';
+    } else {
+      priceEl.textContent = money(product.price);
     }
-  });
-}
+    var unitPrice = product.promo_price || product.price;
+    document.getElementById('pInstallment').textContent = 'ou em até 3x de ' + money(unitPrice/3) + ' sem juros · Pix cai na hora';
 
-async function loadRelated(p) {
-  if (!p.category_id) return;
-  try {
-    const { products: all } = await API.get('/api/products');
-    const related = all.filter((x) => x.category_id === p.category_id && x.slug !== p.slug).slice(0, 4);
-    if (!related.length) return;
-    document.getElementById('related-section').style.display = '';
-    renderProductGrid('related-grid', related);
-  } catch { /* seção de relacionados é best-effort */ }
-}
+    if(product.sizes && product.sizes.length){
+      document.getElementById('sizeSection').style.display = '';
+      var sizeWrap = document.getElementById('sizeOptions');
+      sizeWrap.innerHTML = product.sizes.map(function(s){ return '<button class="opt-btn" data-size="'+s+'">'+s+'</button>'; }).join('');
+      selected.size = product.sizes[0];
+      sizeWrap.querySelector('button').classList.add('active');
+      sizeWrap.addEventListener('click', function(e){
+        var b = e.target.closest('button'); if(!b) return;
+        sizeWrap.querySelectorAll('button').forEach(function(x){ x.classList.remove('active'); });
+        b.classList.add('active'); selected.size = b.dataset.size;
+      });
+    }
+    if(product.colors && product.colors.length){
+      document.getElementById('colorSection').style.display = '';
+      var colorWrap = document.getElementById('colorOptions');
+      colorWrap.innerHTML = product.colors.map(function(c){ return '<button class="opt-btn" data-color="'+c+'">'+c+'</button>'; }).join('');
+      selected.color = product.colors[0];
+      colorWrap.querySelector('button').classList.add('active');
+      colorWrap.addEventListener('click', function(e){
+        var b = e.target.closest('button'); if(!b) return;
+        colorWrap.querySelectorAll('button').forEach(function(x){ x.classList.remove('active'); });
+        b.classList.add('active'); selected.color = b.dataset.color;
+      });
+    }
 
-function selectImage(i) {
-  document.getElementById('main-img').src = currentImages[i];
-  document.querySelectorAll('.gallery-thumbs img').forEach((img, idx) => img.classList.toggle('active', idx === i));
-}
+    var qtyVal = document.getElementById('qtyVal');
+    document.querySelector('.pdp-qty').addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      selected.qty = Math.max(1, Math.min(product.stock || 20, selected.qty + (b.dataset.act==='inc'?1:-1)));
+      qtyVal.textContent = selected.qty;
+    });
 
-function pickSize(btn) {
-  selectedSize = btn.dataset.size;
-  document.querySelectorAll('#size-chips .option-chip').forEach(c => c.classList.remove('selected'));
-  btn.classList.add('selected');
-}
-function pickColor(btn) {
-  selectedColor = btn.dataset.color;
-  document.querySelectorAll('#color-chips .option-chip').forEach(c => c.classList.remove('selected'));
-  btn.classList.add('selected');
-}
+    var stockNote = document.getElementById('stockNote');
+    var metaStock = document.getElementById('metaStock');
+    if(product.stock <= 0){
+      stockNote.textContent = 'Esgotado por enquanto.'; stockNote.classList.add('low');
+      metaStock.textContent = 'Esgotado';
+      document.getElementById('addCartBtn').disabled = true;
+      document.getElementById('buyNowBtn').disabled = true;
+    } else if(product.stock <= 5){
+      stockNote.textContent = 'Restam só ' + product.stock + ' unidades.'; stockNote.classList.add('low');
+      metaStock.textContent = 'Em estoque (' + product.stock + ')';
+    } else {
+      metaStock.textContent = 'Em estoque';
+    }
 
-function buy(product) {
-  const extra = [selectedSize && `tamanho ${selectedSize}`, selectedColor && `cor ${selectedColor}`].filter(Boolean).join(', ');
-  const productForMsg = extra ? { ...product, name: `${product.name} (${extra})` } : product;
-  openWhatsappForProduct(productForMsg);
-}
+    var favBtn = document.getElementById('favBtn');
+    favBtn.classList.toggle('active', RSShop.isFavorite(product.id));
+    favBtn.addEventListener('click', function(){
+      RSShop.toggleFavorite(product.id, { name: product.name });
+      favBtn.classList.toggle('active', RSShop.isFavorite(product.id));
+    });
 
-function renderNotFound() {
-  document.getElementById('pd-root').innerHTML = `
-    <div class="empty-state"><div class="big">🔍</div>Produto não encontrado.<br><br>
-    <a href="/catalogo" class="btn btn-primary">Voltar ao catálogo</a></div>
-  `;
-}
+    document.getElementById('addCartBtn').addEventListener('click', function(){
+      RSShop.addToCart({
+        productId: product.id, name: product.name, slug: product.slug,
+        image: (product.images && product.images[0]) || null,
+        price: unitPrice, quantity: selected.qty, size: selected.size, color: selected.color, stock: product.stock,
+      });
+    });
+    document.getElementById('buyNowBtn').addEventListener('click', function(){
+      var params = new URLSearchParams({ produto: product.slug, quantity: selected.qty });
+      if(selected.size) params.set('size', selected.size);
+      if(selected.color) params.set('color', selected.color);
+      location.href = '/checkout.html?' + params.toString();
+    });
 
-load();
+    // relacionados: mesma(s) categoria(s), excluindo o produto atual
+    var catTag = (product.category_tags && product.category_tags[0]) || '';
+    var relUrl = '/api/products?pageSize=4' + (catTag ? '&categories=' + encodeURIComponent(catTag) : '');
+    fetch(relUrl).then(function(r){return r.json();}).then(function(data){
+      var list = ((data && data.products) || []).filter(function(p){ return p.id !== product.id; }).slice(0,4);
+      if(!list.length) return;
+      var byId = {}; list.forEach(function(p){ byId[p.id]=p; });
+      document.getElementById('relatedGrid').innerHTML = list.map(RSShop.productCardHtml).join('');
+      RSShop.wireProductGrid(document.getElementById('relatedGrid'), byId);
+      document.getElementById('relatedSection').style.display = '';
+    }).catch(function(){});
+  }
+})();
 </script>
 </body>
 </html>

@@ -1,1 +1,0 @@
-- [Arquivos enviados por ZIP](uploaded-archive.md) — ao substituir um projeto por um arquivo enviado, conferir o conteúdo e o histórico remoto antes de sobrescrever.

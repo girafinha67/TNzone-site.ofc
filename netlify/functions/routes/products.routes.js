@@ -2,16 +2,13 @@
 
 const express = require('express');
 const db = require('../lib/db');
-const { slugify, asyncHandler, parseIntId } = require('../lib/http-utils');
+const { slugify, asyncHandler, parseIntId, escapeLike } = require('../lib/http-utils');
 const { log } = require('../lib/auth');
 const { deleteImage } = require('../lib/upload');
-const { broadcast } = require('../lib/realtime');
+const { VALID_CATEGORY_SLUGS } = require('../lib/category-tags');
 
 const router = express.Router();
-const VALID_TYPES = ['tenis', 'camisa', 'calca', 'outro'];
 
-// Valida os campos de um produto vindos do painel admin. Nunca confiamos só
-// na validação do formulário no frontend — tudo é checado de novo aqui.
 async function validateProductPayload(b, { partial } = {}) {
   const errors = [];
 
@@ -43,10 +40,6 @@ async function validateProductPayload(b, { partial } = {}) {
     }
   }
 
-  if (b.type !== undefined && b.type !== null && b.type !== '' && !VALID_TYPES.includes(b.type)) {
-    errors.push('Tipo de produto inválido.');
-  }
-
   if (b.category_id !== undefined && b.category_id !== null && b.category_id !== '') {
     const catId = Number(b.category_id);
     if (!Number.isInteger(catId) || catId <= 0) {
@@ -60,6 +53,15 @@ async function validateProductPayload(b, { partial } = {}) {
   if (b.sizes !== undefined && b.sizes !== null && !Array.isArray(b.sizes)) errors.push('Tamanhos deve ser uma lista.');
   if (b.colors !== undefined && b.colors !== null && !Array.isArray(b.colors)) errors.push('Cores deve ser uma lista.');
   if (b.images !== undefined && b.images !== null && !Array.isArray(b.images)) errors.push('Imagens deve ser uma lista.');
+  if (b.tags !== undefined && b.tags !== null && !Array.isArray(b.tags)) errors.push('Tags deve ser uma lista.');
+
+  if (b.category_tags !== undefined && b.category_tags !== null) {
+    if (!Array.isArray(b.category_tags)) {
+      errors.push('Categorias deve ser uma lista.');
+    } else if (b.category_tags.some((s) => !VALID_CATEGORY_SLUGS.has(s))) {
+      errors.push('Uma ou mais categorias selecionadas são inválidas.');
+    }
+  }
 
   return errors;
 }
@@ -70,6 +72,8 @@ function rowToProduct(row) {
     sizes: JSON.parse(row.sizes || '[]'),
     colors: JSON.parse(row.colors || '[]'),
     images: JSON.parse(row.images || '[]'),
+    tags: JSON.parse(row.tags || '[]'),
+    category_tags: JSON.parse(row.category_tags || '[]'),
     featured: !!row.featured,
     active: !!row.active,
   };
@@ -87,43 +91,97 @@ async function uniqueSlug(name, ignoreId) {
   }
 }
 
-// GET /api/products (público)
+const SORT_MAP = {
+  relevant: 'featured DESC, created_at DESC',
+  recent: 'created_at DESC',
+  price_asc: 'COALESCE(promo_price, price) ASC',
+  price_desc: 'COALESCE(promo_price, price) DESC',
+};
+
+// GET /api/products — catálogo público: busca + filtros combinados + ordenação + paginação
 router.get(
   '/products',
   asyncHandler(async (req, res) => {
-    const query = req.query;
+    const q = req.query;
     const clauses = ['active = 1'];
     const params = [];
 
-    if (query.category) {
+    if (q.category) {
       clauses.push('category_id = (SELECT id FROM categories WHERE slug = ?)');
-      params.push(query.category);
+      params.push(q.category);
     }
-    if (query.type) {
-      clauses.push('type = ?');
-      params.push(query.type);
+    if (q.categories) {
+      const slugs = String(q.categories)
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => VALID_CATEGORY_SLUGS.has(s));
+      if (slugs.length) {
+        clauses.push(`(${slugs.map(() => 'category_tags ILIKE ?').join(' OR ')})`);
+        slugs.forEach((s) => params.push(`%"${s}"%`));
+      }
     }
-    if (query.q) {
-      clauses.push('(name LIKE ? OR description LIKE ?)');
-      params.push(`%${query.q}%`, `%${query.q}%`);
+    if (q.brand) {
+      clauses.push('LOWER(brand) = LOWER(?)');
+      params.push(q.brand);
     }
-    if (query.minPrice && Number.isFinite(Number(query.minPrice))) {
+    if (q.ids) {
+      const idList = String(q.ids)
+        .split(',')
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => Number.isInteger(n) && n > 0);
+      if (!idList.length) {
+        return res.status(200).json({ products: [], total: 0, page: 1, pageSize: 0, totalPages: 1, brands: [] });
+      }
+      clauses.push(`id IN (${idList.map(() => '?').join(',')})`);
+      params.push(...idList);
+    }
+    if (q.q) {
+      clauses.push('(name ILIKE ? OR description ILIKE ? OR brand ILIKE ? OR tags ILIKE ?)');
+      const like = `%${escapeLike(q.q)}%`;
+      params.push(like, like, like, like);
+    }
+    if (q.minPrice && Number.isFinite(Number(q.minPrice))) {
       clauses.push('COALESCE(promo_price, price) >= ?');
-      params.push(Number(query.minPrice));
+      params.push(Number(q.minPrice));
     }
-    if (query.maxPrice && Number.isFinite(Number(query.maxPrice))) {
+    if (q.maxPrice && Number.isFinite(Number(q.maxPrice))) {
       clauses.push('COALESCE(promo_price, price) <= ?');
-      params.push(Number(query.maxPrice));
+      params.push(Number(q.maxPrice));
     }
-    if (query.inStock === '1') clauses.push('stock > 0');
-    if (query.featured === '1') clauses.push('featured = 1');
+    if (q.inStock === '1') clauses.push('stock > 0');
+    if (q.promo === '1') clauses.push('promo_price IS NOT NULL');
+    if (q.featured === '1') clauses.push('featured = 1');
 
-    let rows = await db.all(`SELECT * FROM products WHERE ${clauses.join(' AND ')} ORDER BY created_at DESC`, params);
+    const sort = SORT_MAP[q.sort] || SORT_MAP.recent;
+    const page = Math.max(1, parseInt(q.page, 10) || 1);
+    const pageSizeCap = q.ids ? 100 : 48;
+    const pageSize = Math.min(pageSizeCap, Math.max(1, parseInt(q.pageSize, 10) || (q.ids ? pageSizeCap : 12)));
+    const offset = (page - 1) * pageSize;
+
+    const where = clauses.join(' AND ');
+    const totalRow = await db.get(`SELECT COUNT(*) AS n FROM products WHERE ${where}`, params);
+    let rows = await db.all(
+      `SELECT * FROM products WHERE ${where} ORDER BY ${sort} LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
     rows = rows.map(rowToProduct);
 
-    if (query.size) rows = rows.filter((p) => p.sizes.includes(query.size));
+    // Tamanho/cor filtram sobre JSON — feito em memória após a query paginada
+    // ser pequena o bastante (pageSize <= 48); para volumes maiores valeria
+    // migrar sizes/colors para tabelas relacionais com índice GIN.
+    if (q.size) rows = rows.filter((p) => p.sizes.includes(q.size));
+    if (q.color) rows = rows.filter((p) => p.colors.map((c) => c.toLowerCase()).includes(String(q.color).toLowerCase()));
 
-    res.status(200).json({ products: rows });
+    const brandsRows = await db.all('SELECT DISTINCT brand FROM products WHERE active = 1 AND brand <> \'\' ORDER BY brand ASC');
+
+    res.status(200).json({
+      products: rows,
+      total: Number(totalRow.n),
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(Number(totalRow.n) / pageSize)),
+      brands: brandsRows.map((r) => r.brand),
+    });
   })
 );
 
@@ -137,7 +195,8 @@ router.get(
   })
 );
 
-// GET /api/admin/products
+// ---------- Admin ----------
+
 router.get(
   '/admin/products',
   asyncHandler(async (req, res) => {
@@ -155,26 +214,28 @@ router.post(
 
     const slug = await uniqueSlug(b.name);
     const info = await db.run(
-      `INSERT INTO products (name, slug, category_id, type, description, price, promo_price, sizes, colors, images, stock, featured, active, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      `INSERT INTO products (name, slug, category_id, brand, sku, description, price, promo_price, sizes, colors, images, tags, category_tags, stock, featured, active, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         String(b.name).trim(),
         slug,
         b.category_id || null,
-        VALID_TYPES.includes(b.type) ? b.type : 'outro',
+        b.brand ? String(b.brand).trim() : '',
+        b.sku ? String(b.sku).trim() : null,
         b.description || '',
         Number(b.price) || 0,
         b.promo_price != null && b.promo_price !== '' ? Number(b.promo_price) : null,
         JSON.stringify(b.sizes || []),
         JSON.stringify(b.colors || []),
         JSON.stringify(b.images || []),
+        JSON.stringify(b.tags || []),
+        JSON.stringify(b.category_tags || []),
         Number(b.stock) || 0,
         b.featured ? 1 : 0,
         b.active === false ? 0 : 1,
       ]
     );
     await log(req.admin.id, 'product_create', { id: info.lastInsertRowid, name: b.name });
-    broadcast('changed', { entity: 'products' });
     res.status(201).json({ id: info.lastInsertRowid, slug });
   })
 );
@@ -195,14 +256,15 @@ router.put(
 
     await db.run(
       `UPDATE products SET
-        name = ?, slug = ?, category_id = ?, type = ?, description = ?, price = ?, promo_price = ?,
-        sizes = ?, colors = ?, images = ?, stock = ?, featured = ?, active = ?, updated_at = NOW()
+        name = ?, slug = ?, category_id = ?, brand = ?, sku = ?, description = ?, price = ?, promo_price = ?,
+        sizes = ?, colors = ?, images = ?, tags = ?, category_tags = ?, stock = ?, featured = ?, active = ?, updated_at = NOW()
        WHERE id = ?`,
       [
         b.name != null ? String(b.name).trim() : existing.name,
         slug,
         b.category_id !== undefined ? (b.category_id || null) : existing.category_id,
-        b.type !== undefined ? (VALID_TYPES.includes(b.type) ? b.type : existing.type) : existing.type,
+        b.brand !== undefined ? String(b.brand || '').trim() : existing.brand,
+        b.sku !== undefined ? (b.sku ? String(b.sku).trim() : null) : existing.sku,
         b.description ?? existing.description,
         b.price != null ? Number(b.price) : existing.price,
         b.promo_price !== undefined
@@ -211,6 +273,8 @@ router.put(
         JSON.stringify(b.sizes ?? JSON.parse(existing.sizes)),
         JSON.stringify(b.colors ?? JSON.parse(existing.colors)),
         JSON.stringify(b.images ?? JSON.parse(existing.images)),
+        JSON.stringify(b.tags ?? JSON.parse(existing.tags)),
+        JSON.stringify(b.category_tags ?? JSON.parse(existing.category_tags || '[]')),
         b.stock != null ? Number(b.stock) : existing.stock,
         b.featured != null ? (b.featured ? 1 : 0) : existing.featured,
         b.active != null ? (b.active ? 1 : 0) : existing.active,
@@ -218,7 +282,6 @@ router.put(
       ]
     );
     await log(req.admin.id, 'product_update', { id });
-    broadcast('changed', { entity: 'products' });
     res.status(200).json({ ok: true, slug });
   })
 );
@@ -234,11 +297,11 @@ router.delete(
     for (const img of JSON.parse(existing.images || '[]')) await deleteImage(img);
     await db.run('DELETE FROM products WHERE id = ?', [id]);
     await log(req.admin.id, 'product_delete', { id, name: existing.name });
-    broadcast('changed', { entity: 'products' });
     res.status(200).json({ ok: true });
   })
 );
 
+// Ativar/desativar sem excluir (ocultar temporariamente do catálogo).
 router.patch(
   '/admin/products/:id/toggle',
   asyncHandler(async (req, res) => {
@@ -249,8 +312,25 @@ router.patch(
     const next = existing.active ? 0 : 1;
     await db.run('UPDATE products SET active = ?, updated_at = NOW() WHERE id = ?', [next, id]);
     await log(req.admin.id, 'product_toggle_active', { id, active: !!next });
-    broadcast('changed', { entity: 'products' });
     res.status(200).json({ ok: true, active: !!next });
+  })
+);
+
+// Ajuste rápido de estoque.
+router.patch(
+  '/admin/products/:id/stock',
+  asyncHandler(async (req, res) => {
+    const id = parseIntId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID de produto inválido.' });
+    const stock = Number(req.body.stock);
+    if (!Number.isInteger(stock) || stock < 0) {
+      return res.status(400).json({ error: 'Estoque deve ser um número inteiro maior ou igual a zero.' });
+    }
+    const existing = await db.get('SELECT id FROM products WHERE id = ?', [id]);
+    if (!existing) return res.status(404).json({ error: 'Produto não encontrado.' });
+    await db.run('UPDATE products SET stock = ?, updated_at = NOW() WHERE id = ?', [stock, id]);
+    await log(req.admin.id, 'product_stock_update', { id, stock });
+    res.status(200).json({ ok: true, stock });
   })
 );
 

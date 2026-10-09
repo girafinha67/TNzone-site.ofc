@@ -1,0 +1,94 @@
+/* =========================================================
+   TN'ZONE Admin — Análise de usuários (Analytics)
+   Estende os tokens de assets/style.css / css/catalogo.css.
+   Mesma linguagem visual do resto do admin: fundo escuro,
+   cantos retos (--radius), acento gold/flame, Anton nos números.
+   ========================================================= */
+
+.az-topbar-row{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+
+/* ---------- Seletor de período ---------- */
+.az-period-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:22px; }
+.az-period-btn{
+  font-family:var(--font-body); font-size:0.78rem; font-weight:700; letter-spacing:0.01em;
+  padding:8px 14px; border-radius:var(--radius); border:1px solid var(--line);
+  background:var(--black-1); color:var(--grey); cursor:pointer; transition:border-color .15s, color .15s, background .15s;
+  white-space:nowrap;
+}
+.az-period-btn:hover{ color:var(--white-warm); border-color:var(--line-gold); }
+.az-period-btn.active{
+  background:linear-gradient(135deg, var(--gold-bright), var(--gold) 60%, var(--gold-dim));
+  color:var(--ink-on-accent); border-color:transparent;
+}
+.az-custom-range{ display:flex; gap:8px; align-items:center; }
+.az-custom-range input[type="date"]{
+  background:var(--black-1); border:1px solid var(--line); color:var(--white-warm);
+  border-radius:var(--radius); padding:7px 10px; font-family:var(--font-body); font-size:0.8rem;
+}
+
+/* ---------- Toggle Analytics ligado/desligado ---------- */
+.az-toggle-wrap{ display:flex; align-items:center; gap:10px; font-size:0.78rem; color:var(--grey); }
+.az-switch{ position:relative; width:40px; height:22px; border-radius:999px; background:var(--black-2); border:1px solid var(--line); cursor:pointer; flex-shrink:0; }
+.az-switch::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:var(--grey); transition:transform .15s, background .15s; }
+.az-switch.on{ border-color:var(--line-gold); }
+.az-switch.on::after{ transform:translateX(18px); background:var(--gold-bright); }
+
+/* ---------- Cards de métrica ---------- */
+.az-stat-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(190px,1fr)); gap:14px; margin-bottom:28px; }
+.az-stat-card{ border:1px solid var(--line); background:var(--black-1); border-radius:var(--radius); padding:18px 20px; }
+.az-stat-card .az-label{ color:var(--grey); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; display:flex; align-items:center; gap:6px; }
+.az-stat-card .az-n{ font-family:var(--font-display); font-size:1.9rem; color:var(--white-warm); margin:6px 0 4px; line-height:1; }
+.az-delta{ font-size:0.76rem; font-weight:700; display:inline-flex; align-items:center; gap:3px; }
+.az-delta.up{ color:#1f9d63; }
+.az-delta.down{ color:var(--flame-red); }
+.az-delta.flat{ color:var(--grey); }
+.az-delta-note{ color:var(--grey); font-weight:500; margin-left:4px; }
+
+.az-empty-note{ color:var(--grey); font-size:0.85rem; padding:14px 0; }
+
+/* ---------- Blocos/gráficos ---------- */
+.az-section{ margin-bottom:30px; }
+.az-section-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+.az-section-head h3{ font-size:1.02rem; margin:0; }
+.az-grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.az-grid-3{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+@media (max-width:900px){ .az-grid-2, .az-grid-3{ grid-template-columns:1fr; } }
+
+.az-card{ border:1px solid var(--line); background:var(--black-1); border-radius:var(--radius); padding:20px; }
+.az-card h4{ font-size:0.82rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--grey); margin:0 0 14px; font-family:var(--font-body); font-weight:700; }
+
+.az-chart-wrap{ width:100%; overflow:hidden; }
+.az-chart-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+.az-chart-legend{ display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:0.75rem; color:var(--grey); }
+.az-chart-legend span{ display:inline-flex; align-items:center; gap:6px; }
+.az-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+/* ---------- Barras de ranking (produtos, páginas etc) ---------- */
+.az-bar-row{ margin-bottom:12px; }
+.az-bar-row:last-child{ margin-bottom:0; }
+.az-bar-label{ display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:5px; gap:10px; }
+.az-bar-label .name{ color:var(--white-warm); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.az-bar-label .val{ color:var(--grey); flex-shrink:0; }
+.az-bar-track{ height:8px; background:var(--black-2); border-radius:var(--radius); overflow:hidden; }
+.az-bar-fill{ height:100%; background:linear-gradient(90deg, var(--gold-dim), var(--gold) 60%, var(--gold-bright)); border-radius:var(--radius); }
+
+/* ---------- Tempo real ---------- */
+.az-live-dot{ width:9px; height:9px; border-radius:50%; background:#ff2d2d; display:inline-block; animation:azPulse 1.6s ease infinite; }
+@keyframes azPulse{ 0%,100%{ opacity:1; box-shadow:0 0 0 0 rgba(255,45,45,0.5); } 50%{ opacity:0.65; box-shadow:0 0 0 6px rgba(255,45,45,0); } }
+.az-live-count{ font-family:var(--font-display); font-size:1.5rem; color:var(--white-warm); }
+
+/* ---------- Tabelas específicas do Analytics (reaproveita .admin-table) ---------- */
+.az-table-note{ color:var(--grey); font-size:0.72rem; margin-top:8px; }
+
+/* ---------- Export ---------- */
+.az-export-btn{
+  font-family:var(--font-body); font-size:0.76rem; font-weight:700; padding:8px 14px;
+  border-radius:var(--radius); border:1px solid var(--line); background:transparent; color:var(--grey); cursor:pointer;
+}
+.az-export-btn:hover{ color:var(--gold-text); border-color:var(--line-gold); }
+
+@media (max-width:640px){
+  .az-stat-card .az-n{ font-size:1.5rem; }
+  .az-period-row{ gap:6px; }
+  .az-period-btn{ padding:7px 10px; font-size:0.72rem; }
+}

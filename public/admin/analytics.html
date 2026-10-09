@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análise de usuários | Painel TN'zone</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext x='50' y='68' font-size='60' fill='white' text-anchor='middle' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../css/catalogo.css">
+<link rel="stylesheet" href="../css/analytics.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-logo">
+      
+      <span>TN'zone <em style="color:var(--gold-bright); font-style:normal;">Admin</em></span>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html">Dashboard</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="categorias.html">Categorias</a>
+      <a href="feedbacks.html">Feedbacks</a>
+      <a href="analytics.html" class="active">Análise de usuários</a>
+      <a href="conteudo.html">Conteúdo da Home</a>
+      <a href="#" id="logoutBtn">Sair</a>
+    </nav>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>📊 Análise de usuários</h1>
+      <span class="admin-email" id="adminEmail"></span>
+    </div>
+
+    <div class="az-topbar-row">
+      <div class="az-toggle-wrap">
+        <span>Coleta de Analytics</span>
+        <div class="az-switch" id="analyticsSwitch" role="button" aria-label="Ligar ou desligar a coleta de Analytics"></div>
+        <span id="analyticsSwitchLabel">—</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <span style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--grey);">
+          <span class="az-live-dot"></span>
+          <span class="az-live-count" id="liveCount">—</span> agora
+        </span>
+      </div>
+    </div>
+
+    <div class="az-period-row" id="periodRow">
+      <button class="az-period-btn" data-range="today">Hoje</button>
+      <button class="az-period-btn" data-range="yesterday">Ontem</button>
+      <button class="az-period-btn" data-range="7d">7 dias</button>
+      <button class="az-period-btn active" data-range="30d">30 dias</button>
+      <button class="az-period-btn" data-range="this_week">Esta semana</button>
+      <button class="az-period-btn" data-range="last_week">Semana passada</button>
+      <button class="az-period-btn" data-range="this_month">Este mês</button>
+      <button class="az-period-btn" data-range="last_month">Mês passado</button>
+      <button class="az-period-btn" data-range="this_year">Este ano</button>
+      <button class="az-period-btn" data-range="last_year">Ano passado</button>
+      <button class="az-period-btn" data-range="12m">Últimos 12 meses</button>
+      <button class="az-period-btn" data-range="custom">Personalizado</button>
+      <span class="az-custom-range" id="customRange" style="display:none;">
+        <input type="date" id="customFrom">
+        <span style="color:var(--grey);">até</span>
+        <input type="date" id="customTo">
+        <button class="az-export-btn" id="customApply" type="button">Aplicar</button>
+      </span>
+    </div>
+
+    <div class="az-stat-grid" id="statGrid">
+      <div class="az-stat-card"><div class="skeleton sk-line" style="width:50%; height:20px;"></div></div>
+      <div class="az-stat-card"><div class="skeleton sk-line" style="width:50%; height:20px;"></div></div>
+      <div class="az-stat-card"><div class="skeleton sk-line" style="width:50%; height:20px;"></div></div>
+      <div class="az-stat-card"><div class="skeleton sk-line" style="width:50%; height:20px;"></div></div>
+    </div>
+
+    <div class="az-section">
+      <div class="az-section-head">
+        <h3>Visitantes ao longo do tempo</h3>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <select id="tsMetric" class="az-export-btn" style="cursor:pointer;">
+            <option value="visitors">Visitantes</option>
+            <option value="sessions">Sessões</option>
+            <option value="pageviews">Visualizações</option>
+            <option value="whatsappClicks">Cliques WhatsApp</option>
+            <option value="new_vs_recurring">Novos x Recorrentes</option>
+          </select>
+          <a class="az-export-btn" href="#" id="exportOverview">Exportar CSV</a>
+        </div>
+      </div>
+      <div class="az-card">
+        <div class="az-chart-wrap" id="tsChart"></div>
+        <div class="az-chart-legend" id="tsLegend"></div>
+      </div>
+    </div>
+
+    <div class="az-section az-grid-2">
+      <div class="az-card">
+        <h4>Dispositivos</h4>
+        <div style="display:flex; align-items:center; gap:20px;">
+          <div class="az-chart-wrap" style="max-width:150px;" id="deviceDonut"></div>
+          <div class="az-chart-legend" id="deviceLegend" style="flex-direction:column; gap:8px;"></div>
+        </div>
+      </div>
+      <div class="az-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h4 style="margin:0;">Origem dos visitantes</h4>
+          <a class="az-export-btn" href="#" id="exportSources">Exportar CSV</a>
+        </div>
+        <div style="display:flex; align-items:center; gap:20px; margin-bottom:14px;">
+          <div class="az-chart-wrap" style="max-width:130px;" id="sourceDonut"></div>
+          <div class="az-chart-legend" id="sourceLegend" style="flex-direction:column; gap:8px;"></div>
+        </div>
+        <div id="sourcesList"></div>
+      </div>
+    </div>
+
+    <div class="az-section az-grid-2">
+      <div class="az-card">
+        <h4>Navegadores</h4>
+        <div style="display:flex; align-items:center; gap:20px; margin-bottom:14px;">
+          <div class="az-chart-wrap" style="max-width:120px;" id="browserDonut"></div>
+          <div class="az-chart-legend" id="browserLegend" style="flex-direction:column; gap:6px;"></div>
+        </div>
+        <div id="browserList"></div>
+      </div>
+      <div class="az-card">
+        <h4>Sistema operacional</h4>
+        <div style="display:flex; align-items:center; gap:20px; margin-bottom:14px;">
+          <div class="az-chart-wrap" style="max-width:120px;" id="osDonut"></div>
+          <div class="az-chart-legend" id="osLegend" style="flex-direction:column; gap:6px;"></div>
+        </div>
+        <div id="osList"></div>
+      </div>
+    </div>
+
+    <div class="az-section">
+      <div class="az-section-head">
+        <h3>Produtos mais visualizados</h3>
+        <a class="az-export-btn" href="#" id="exportProducts">Exportar CSV</a>
+      </div>
+      <div class="az-card" id="productsCard"></div>
+    </div>
+
+    <div class="az-section az-grid-2">
+      <div class="az-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h4 style="margin:0;">Categorias mais acessadas</h4>
+          <a class="az-export-btn" href="#" id="exportCategories">Exportar CSV</a>
+        </div>
+        <div id="categoriesList"></div>
+      </div>
+      <div class="az-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h4 style="margin:0;">Localização</h4>
+          <a class="az-export-btn" href="#" id="exportLocations">Exportar CSV</a>
+        </div>
+        <div id="locationsList"></div>
+      </div>
+    </div>
+
+    <div class="az-section">
+      <div class="az-section-head">
+        <h3>Páginas</h3>
+        <a class="az-export-btn" href="#" id="exportPages">Exportar CSV</a>
+      </div>
+      <div class="az-grid-3">
+        <div class="az-card">
+          <h4>Mais acessadas</h4>
+          <div id="topPagesList"></div>
+        </div>
+        <div class="az-card">
+          <h4>Páginas de entrada</h4>
+          <div id="entryPagesList"></div>
+        </div>
+        <div class="az-card">
+          <h4>Páginas de saída</h4>
+          <div id="exitPagesList"></div>
+          <p class="az-table-note">Estimado a partir da última página vista na sessão.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="az-section" id="searchSection" style="display:none;">
+      <div class="az-section-head"><h3>O que estão buscando</h3></div>
+      <div class="az-card" id="searchList"></div>
+    </div>
+
+    <div class="az-section az-grid-2">
+      <div class="az-card">
+        <h4>Horário de maior movimento</h4>
+        <div class="az-chart-wrap" id="hoursChart"></div>
+      </div>
+      <div class="az-card">
+        <h4>Dia da semana</h4>
+        <div class="az-chart-wrap" id="weekdayChart"></div>
+      </div>
+    </div>
+
+    <div class="az-section">
+      <div class="az-section-head"><h3>🔴 Usuários agora</h3></div>
+      <div class="az-card">
+        <div id="realtimePages"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/admin-common.js"></script>
+<script src="../js/analytics-charts.js"></script>
+<script src="../js/admin-analytics.js"></script>
+</body>
+</html>

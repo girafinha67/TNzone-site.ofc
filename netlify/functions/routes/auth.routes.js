@@ -42,17 +42,18 @@ router.post(
     }
 
     await clearAttempts(ip);
-    const { cookieValue, expiresAt } = await createSession(admin.id, remember, ip);
+    const { cookieValue, expiresAt } = await createSession(admin.id, remember, ip, req.headers['user-agent']);
     res.setHeader('Set-Cookie', sessionCookieHeader(cookieValue, expiresAt));
-    await log(admin.id, 'login', { ip });
+    await log(admin.id, 'login', { ip, remember });
     res.status(200).json({ ok: true, admin: { id: admin.id, email: admin.email } });
   })
 );
 
+// "Sair deste dispositivo": apaga só a sessão/cookie atual.
 router.post(
   '/auth/logout',
   asyncHandler(async (req, res) => {
-    await destroySession(req.cookies.tnz_session);
+    await destroySession(req.cookies[require('../lib/auth').COOKIE_NAME]);
     res.setHeader('Set-Cookie', clearCookieHeader());
     if (req.admin) await log(req.admin.id, 'logout', {});
     res.status(200).json({ ok: true });
@@ -79,6 +80,32 @@ router.post(
     const { salt, hash } = hashPassword(newPassword);
     await db.run('UPDATE admins SET password_hash = ?, salt = ? WHERE id = ?', [hash, salt, admin.id]);
     await log(admin.id, 'change_password', {});
+    res.status(200).json({ ok: true });
+  })
+);
+
+// Lista dispositivos/sessões confiáveis do admin logado (painel > Segurança).
+router.get(
+  '/admin/devices',
+  asyncHandler(async (req, res) => {
+    const rows = await db.all(
+      `SELECT id, remember, user_agent, created_at, last_seen_at, expires_at, last_ip
+       FROM sessions WHERE admin_id = ? ORDER BY last_seen_at DESC`,
+      [req.admin.id]
+    );
+    const currentId = (req.cookies[require('../lib/auth').COOKIE_NAME] || '').split('.')[0];
+    res.status(200).json({
+      devices: rows.map((r) => ({ ...r, remember: !!r.remember, current: r.id === currentId })),
+    });
+  })
+);
+
+// Revoga um dispositivo/sessão específico (ou todos os outros).
+router.delete(
+  '/admin/devices/:id',
+  asyncHandler(async (req, res) => {
+    await db.run('DELETE FROM sessions WHERE id = ? AND admin_id = ?', [req.params.id, req.admin.id]);
+    await log(req.admin.id, 'revoke_device', { id: req.params.id });
     res.status(200).json({ ok: true });
   })
 );

@@ -6,17 +6,33 @@ const crypto = require('node:crypto');
 const databaseUrl = process.env.SUPABASE_DB_POOLER_URL || process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  console.warn('[tn-zone] SUPABASE_DB_POOLER_URL não definida — configure a connection string do Supabase nas env vars do Netlify.');
+  console.warn('[rshoes] SUPABASE_DB_POOLER_URL não definida — configure a connection string do Supabase nas env vars do Netlify.');
 }
 
+// max: em ambiente serverless (Netlify Functions) cada container "quente"
+// mantém seu próprio Pool, e vários containers podem rodar em paralelo sob
+// carga. O pooler do Supabase (PgBouncer) em modo "session" tem um limite
+// baixo de clientes simultâneos (ex.: pool_size: 15 no plano free) — se cada
+// container abrir muitas conexões, o total estoura esse limite e o Supabase
+// devolve "(EMAXCONNSESSION) max clients reached in session mode". Por isso
+// mantemos max baixo por container e liberamos conexões ociosas rápido.
 const pool = new Pool({
   connectionString: databaseUrl,
   ssl: databaseUrl && databaseUrl.includes('localhost')
     ? false
     : { rejectUnauthorized: false },
+  max: 3,
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 10_000,
 });
 
-// Converte placeholders estilo SQLite ("?") para o formato do Postgres ($1, $2...)
+pool.on('error', (err) => {
+  // Erros em clients ociosos (ex.: conexão derrubada pelo pooler) não devem
+  // derrubar o processo da function — só logamos.
+  console.error('[rshoes] Erro inesperado no pool do Postgres:', err.message);
+});
+
+// Converte placeholders estilo "?" para o formato do Postgres ($1, $2...)
 function toPgQuery(sql) {
   let i = 0;
   return sql.replace(/\?/g, () => `$${++i}`);
@@ -32,8 +48,6 @@ async function get(sql, params = []) {
   return rows[0] || null;
 }
 
-// INSERT/UPDATE/DELETE. Para INSERT sem RETURNING explícito em tabelas com
-// coluna id, adiciona "RETURNING id" para imitar o lastInsertRowid do node:sqlite.
 function addInsertReturningId(sql) {
   const isInsert = /^\s*INSERT/i.test(sql);
   const isSettingsInsert = /^\s*INSERT\s+INTO\s+settings\b/i.test(sql);
@@ -91,13 +105,19 @@ CREATE TABLE IF NOT EXISTS admins (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Sessão = também é o "dispositivo confiável": quando remember=1, dura 30 dias
+-- e o navegador não precisa logar de novo. Revogar = apagar a linha (logout
+-- "deste dispositivo" ou botão de revogar no painel).
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
   admin_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL,
   remember INTEGER NOT NULL DEFAULT 0,
+  device_label TEXT,
+  user_agent TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_ip TEXT
 );
 
@@ -115,13 +135,15 @@ CREATE TABLE IF NOT EXISTS products (
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
-  type TEXT NOT NULL DEFAULT 'outro',
+  brand TEXT NOT NULL DEFAULT '',
+  sku TEXT,
   description TEXT,
   price REAL NOT NULL DEFAULT 0,
   promo_price REAL,
   sizes TEXT NOT NULL DEFAULT '[]',
   colors TEXT NOT NULL DEFAULT '[]',
   images TEXT NOT NULL DEFAULT '[]',
+  tags TEXT NOT NULL DEFAULT '[]',
   stock INTEGER NOT NULL DEFAULT 0,
   featured INTEGER NOT NULL DEFAULT 0,
   active INTEGER NOT NULL DEFAULT 1,
@@ -129,15 +151,109 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  merchant_charge_id TEXT UNIQUE NOT NULL,
+  picpay_id TEXT,
+  picpay_status TEXT,
+  transaction_id TEXT,
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+  product_name TEXT NOT NULL,
+  product_slug TEXT,
+  product_image TEXT,
+  quantity INTEGER NOT NULL,
+  unit_price NUMERIC(12,2) NOT NULL,
+  amount NUMERIC(12,2) NOT NULL,
+  points INTEGER NOT NULL DEFAULT 0,
+  customer_name TEXT NOT NULL,
+  customer_cpf TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  customer_phone TEXT NOT NULL,
+  size TEXT,
+  color TEXT,
+  additional_data TEXT,
+  status TEXT NOT NULL DEFAULT 'PENDING',
+  pix_qr_code TEXT,
+  pix_qr_code_base64 TEXT,
+  pix_expires_at TIMESTAMPTZ,
+  paid_at TIMESTAMPTZ,
+  whatsapp_notified_at TIMESTAMPTZ,
+  error_message TEXT,
+  stock_reserved INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email);
+CREATE INDEX IF NOT EXISTS idx_orders_merchant_charge ON orders(merchant_charge_id);
+
+-- Itens de um pedido de carrinho (multi-produto). Pedidos antigos / compra
+-- direta de 1 produto continuam usando só as colunas product_* de orders e
+-- não têm linhas aqui — o código trata os dois formatos.
+CREATE TABLE IF NOT EXISTS order_items (
+  id BIGSERIAL PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+  product_name TEXT NOT NULL,
+  product_slug TEXT,
+  product_image TEXT,
+  quantity INTEGER NOT NULL,
+  unit_price NUMERIC(12,2) NOT NULL,
+  size TEXT,
+  color TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+
+-- Idempotência dos webhooks PicPay: o mesmo evento pode ser reenviado.
+CREATE TABLE IF NOT EXISTS payment_webhook_events (
+  id BIGSERIAL PRIMARY KEY,
+  event_id TEXT NOT NULL UNIQUE,
+  merchant_charge_id TEXT NOT NULL,
+  event_type TEXT,
+  status TEXT,
+  payload JSONB NOT NULL,
+  received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_webhook_events_charge
+  ON payment_webhook_events(merchant_charge_id);
+
+-- Outbox de notificações: garante no máximo uma notificação lógica por pedido
+-- e permite nova tentativa caso o WhatsApp esteja temporariamente indisponível.
+CREATE TABLE IF NOT EXISTS payment_notifications (
+  id BIGSERIAL PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'PENDING',
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT,
+  sent_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(order_id, type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_notifications_pending
+  ON payment_notifications(status, updated_at);
+
+-- Feedbacks de clientes (foto/vídeo do pedido). Entram como 'pending' e só
+-- aparecem no site depois que um admin aprova.
 CREATE TABLE IF NOT EXISTS feedbacks (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
-  rating INTEGER NOT NULL,
-  comment TEXT,
-  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+  product_name TEXT NOT NULL,
+  purchase_date DATE NOT NULL,
+  media_url TEXT NOT NULL,
+  media_type TEXT NOT NULL DEFAULT 'image',
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_feedbacks_status ON feedbacks(status, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
@@ -152,67 +268,132 @@ CREATE TABLE IF NOT EXISTS logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Registro de "hits" para rate limiting (login, envio de feedback, etc.).
--- Compatível com serverless: sobrevive a cold starts, diferente de um Map em memória.
+-- Registro de tentativas para rate limiting (login), persistido para
+-- sobreviver a cold starts (diferente de um Map em memória).
 CREATE TABLE IF NOT EXISTS rate_hits (
   id SERIAL PRIMARY KEY,
   bucket TEXT NOT NULL,
   ip TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- ===================== Analytics (visitantes/sessões/eventos) =====================
+-- Visitante anônimo: um UUID gerado e guardado no localStorage do navegador
+-- (nunca dado pessoal). Serve só para diferenciar "novo" de "recorrente".
+CREATE TABLE IF NOT EXISTS analytics_visitors (
+  id TEXT PRIMARY KEY,
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  sessions_count INTEGER NOT NULL DEFAULT 0
+);
+
+-- Sessão: UUID gerado no sessionStorage do navegador (expira sozinho ao
+-- fechar a aba ou após 30min de inatividade — ver public/js/analytics-track.js).
+-- Guarda o "resumo" da sessão; os eventos individuais ficam em analytics_events.
+CREATE TABLE IF NOT EXISTS analytics_sessions (
+  id TEXT PRIMARY KEY,
+  visitor_id TEXT NOT NULL REFERENCES analytics_visitors(id) ON DELETE CASCADE,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  is_new_visitor INTEGER NOT NULL DEFAULT 0,
+  entry_page TEXT,
+  last_page TEXT,
+  referrer TEXT,
+  source TEXT,
+  medium TEXT,
+  campaign TEXT,
+  term TEXT,
+  content TEXT,
+  device_type TEXT,
+  browser TEXT,
+  os TEXT,
+  screen_w INTEGER,
+  screen_h INTEGER,
+  country TEXT,
+  region TEXT,
+  city TEXT,
+  page_count INTEGER NOT NULL DEFAULT 0,
+  event_count INTEGER NOT NULL DEFAULT 0
+);
+
+-- Evento individual (page_view, product_view, whatsapp_click, search, etc).
+-- Câmera lenta de tudo que acontece no site — as telas de Analytics leem
+-- daqui via consultas agregadas (nunca varrendo a tabela inteira sem filtro
+-- de data, ver lib/analytics-queries.js).
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id BIGSERIAL PRIMARY KEY,
+  event_name TEXT NOT NULL,
+  session_id TEXT NOT NULL REFERENCES analytics_sessions(id) ON DELETE CASCADE,
+  visitor_id TEXT NOT NULL,
+  page_url TEXT,
+  page_path TEXT,
+  referrer TEXT,
+  product_id INTEGER,
+  product_slug TEXT,
+  category_slugs TEXT NOT NULL DEFAULT '[]',
+  search_term TEXT,
+  search_results INTEGER,
+  meta TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
   `);
 
-  // Índices — criados fora do bloco acima para poder usar IF NOT EXISTS de
-  // forma independente e não falhar caso alguma já exista de um deploy anterior.
+  // Categorias fixas (multi-seleção) do produto — ver lib/category-tags.js.
+  // Coluna separada de category_id/categories (sistema antigo, mantido por
+  // compatibilidade mas não usado mais no formulário de produto).
+  await exec(`ALTER TABLE products ADD COLUMN IF NOT EXISTS category_tags TEXT NOT NULL DEFAULT '[]';`);
+  await exec(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS description TEXT;`);
+  await exec(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_cart INTEGER NOT NULL DEFAULT 0;`);
+
   await exec(`
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);
 CREATE INDEX IF NOT EXISTS idx_products_active_created ON products(active, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_products_brand ON products(brand);
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 CREATE INDEX IF NOT EXISTS idx_categories_active_order ON categories(active, order_index);
-CREATE INDEX IF NOT EXISTS idx_feedbacks_status ON feedbacks(status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_feedbacks_product ON feedbacks(product_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_admin ON sessions(admin_id);
 CREATE INDEX IF NOT EXISTS idx_logs_created ON logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_rate_hits_lookup ON rate_hits(bucket, ip, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_visitors_last_seen ON analytics_visitors(last_seen_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analytics_sessions_started ON analytics_sessions(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analytics_sessions_activity ON analytics_sessions(last_activity_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analytics_sessions_visitor ON analytics_sessions(visitor_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_name_created ON analytics_events(event_name, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_session ON analytics_events(session_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_visitor ON analytics_events(visitor_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_product ON analytics_events(product_id, created_at DESC) WHERE product_id IS NOT NULL;
   `);
 }
+
+// Categorias reais da loja (mesmo conteúdo usado no preview estático do
+// Spck Editor via mock-api.js) — semeadas de verdade no banco na primeira
+// inicialização, para que a home mostre estas categorias também em produção
+// (Netlify + Postgres), e não só no preview sem backend.
+const REAL_CATEGORIES = [
+  { name: 'Nike', slug: 'nike', image: '/assets/categories/nike.jpg', description: 'Cortes baixos para o dia a dia.', order_index: 1 },
+  { name: 'Adidas', slug: 'adidas', image: '/assets/categories/adidas.jpg', description: 'Cano alto, presença de rua.', order_index: 2 },
+  { name: 'New Balance', slug: 'new-balance', image: '/assets/categories/new-balance.jpg', description: 'Sem cadarço, praticidade total.', order_index: 3 },
+  { name: 'Infantis', slug: 'infantis', image: '/assets/categories/infantis.jpg', description: 'Resistência para o street.', order_index: 4 },
+  { name: 'Linha premium', slug: 'linha-premium', image: '/assets/categories/linha-premium.jpg', description: 'Peças exclusivas e numeradas.', order_index: 5 },
+  { name: 'Vans', slug: 'vans', image: '/assets/categories/vans.jpg', description: 'Clássicos street e skate.', order_index: 6 },
+];
 
 async function seed() {
   const catCount = (await get('SELECT COUNT(*) AS n FROM categories')).n;
   if (Number(catCount) === 0) {
-    const insertCat = 'INSERT INTO categories (name, slug, order_index, active) VALUES (?, ?, ?, 1)';
-    await run(insertCat, ['Tênis', 'tenis', 1]);
-    await run(insertCat, ['Camisas', 'camisas', 2]);
-    await run(insertCat, ['Calças', 'calcas', 3]);
-    await run(insertCat, ['Novidades', 'novidades', 4]);
-  }
-
-  const defaultSettings = {
-    store_name: 'TN Zone',
-    tagline: 'Streetwear e sneakers selecionados.',
-    whatsapp_number: '5561986553995',
-    instagram: 'tnzone.ofc',
-    email_contact: '',
-    logo_url: '/img/logo-mark.png',
-    favicon_url: '/img/favicon.png',
-    primary_color: '#375BFF',
-    banner_title: 'A curadoria certa para o seu próximo par.',
-    banner_subtitle: 'Tênis, camisas e calças selecionados — direto no seu Instagram.',
-    banner_image: '',
-    footer_text: 'TN Zone — loja nova de tênis e streetwear, tocada por dois amigos e um sonho.',
-    home_sections_order: JSON.stringify(['banner', 'categorias', 'destaques', 'novidades', 'feedbacks']),
-  };
-  for (const [k, v] of Object.entries(defaultSettings)) {
-    await run('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', [k, String(v)]);
+    const insertCat =
+      'INSERT INTO categories (name, slug, image, description, order_index, active) VALUES (?, ?, ?, ?, ?, 1)';
+    for (const c of REAL_CATEGORIES) {
+      await run(insertCat, [c.name, c.slug, c.image, c.description, c.order_index]);
+    }
   }
 }
 
-// Verifica senha usando o mesmo método de scrypt do lib/auth.js. Implementado
-// aqui (em vez de importar auth.js) para evitar dependência circular, já que
-// auth.js já faz require('./db').
 function verifyPasswordScrypt(password, salt, expectedHash) {
   const hash = crypto.scryptSync(password, salt, 64).toString('hex');
   const a = Buffer.from(hash, 'hex');
@@ -221,29 +402,20 @@ function verifyPasswordScrypt(password, salt, expectedHash) {
   return crypto.timingSafeEqual(a, b);
 }
 
-// Garante que existe exatamente um administrador e que ele usa as
-// credenciais definidas em ADMIN_EMAIL / ADMIN_PASSWORD (Netlify env vars).
-//
-// - Se não houver nenhum admin: cria um novo com essas credenciais.
-// - Se já houver admin: ATUALIZA o registro existente (nunca cria outro),
-//   trocando e-mail/hash/salt somente quando eles realmente diferem do que
-//   está configurado — assim uma nova invocação não fica reescrevendo o
-//   banco à toa, mas o estado final sempre bate com as env vars atuais.
-// - Nunca grava a senha em texto puro (só o hash scrypt) nem em log.
+// Garante que existe exatamente um administrador com as credenciais definidas
+// em ADMIN_EMAIL / ADMIN_PASSWORD (variáveis de ambiente do Netlify). Nunca
+// grava senha em texto puro — só hash scrypt + salt.
 async function ensureAdmin() {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) {
     console.warn(
-      '[tn-zone] ADMIN_EMAIL/ADMIN_PASSWORD não definidos — configure-os nas ' +
+      '[rshoes] ADMIN_EMAIL/ADMIN_PASSWORD não definidos — configure-os nas ' +
       'variáveis de ambiente do Netlify para criar/atualizar o administrador.'
     );
     return;
   }
   const normalizedEmail = email.toLowerCase().trim();
-
-  // Sempre o admin mais antigo (menor id) — o sistema opera com um único
-  // administrador fixo.
   const existing = await get('SELECT * FROM admins ORDER BY id ASC LIMIT 1');
 
   if (!existing) {
@@ -254,14 +426,13 @@ async function ensureAdmin() {
       hash,
       salt,
     ]);
-    console.log(`[tn-zone] Administrador inicial criado: ${normalizedEmail}`);
+    console.log(`[rshoes] Administrador inicial criado: ${normalizedEmail}`);
     return;
   }
 
   const emailMatches = existing.email === normalizedEmail;
   const passwordMatches = verifyPasswordScrypt(password, existing.salt, existing.password_hash);
-
-  if (emailMatches && passwordMatches) return; // já está tudo em dia
+  if (emailMatches && passwordMatches) return;
 
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(password, salt, 64).toString('hex');
@@ -271,20 +442,49 @@ async function ensureAdmin() {
     salt,
     existing.id,
   ]);
-  console.log(`[tn-zone] Administrador atualizado para: ${normalizedEmail}`);
+  console.log(`[rshoes] Administrador atualizado para: ${normalizedEmail}`);
 }
 
-// Limpeza best-effort de dados voláteis antigos (sessões expiradas e hits de
-// rate limit velhos). Chamada com baixa probabilidade a cada request para não
-// pesar todo request com um DELETE, mas ainda assim manter as tabelas enxutas
-// sem precisar de um cron job dedicado.
+// Retenção do Analytics: por padrão guarda ~13 meses (permite comparar
+// "este mês vs mesmo mês ano passado"). Ajustável via env var sem precisar
+// alterar código. Ver README.md, seção de Analytics.
+const ANALYTICS_RETENTION_DAYS = Math.max(
+  30,
+  parseInt(process.env.ANALYTICS_RETENTION_DAYS, 10) || 400
+);
+
 async function pruneOldData() {
   try {
     await exec("DELETE FROM sessions WHERE expires_at < NOW() - INTERVAL '1 day'");
     await exec("DELETE FROM rate_hits WHERE created_at < NOW() - INTERVAL '1 day'");
+    // Eventos/sessões/visitantes de Analytics mais antigos que a retenção
+    // configurada. Eventos referenciam sessões com ON DELETE CASCADE, então
+    // apagar a sessão já leva os eventos junto; visitantes só são removidos
+    // quando não sobra nenhuma sessão recente (evita perder o "primeiro
+    // acesso" de alguém que voltou a visitar recentemente).
+    await exec(
+      `DELETE FROM analytics_sessions WHERE started_at < NOW() - INTERVAL '${ANALYTICS_RETENTION_DAYS} days'`
+    );
+    await exec(
+      `DELETE FROM analytics_visitors WHERE last_seen_at < NOW() - INTERVAL '${ANALYTICS_RETENTION_DAYS} days'`
+    );
   } catch (err) {
-    console.warn('[tn-zone] Falha ao limpar dados antigos (não crítico):', err.message);
+    console.warn('[rshoes] Falha ao limpar dados antigos (não crítico):', err.message);
   }
+}
+
+// ---------- settings (key/value genérico — usado pelo toggle de Analytics) ----------
+async function getSetting(key, fallback = null) {
+  const row = await get('SELECT value FROM settings WHERE key = ?', [key]);
+  return row ? row.value : fallback;
+}
+
+async function setSetting(key, value) {
+  await run(
+    `INSERT INTO settings (key, value) VALUES (?, ?)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [key, String(value)]
+  );
 }
 
 function init() {
@@ -294,11 +494,11 @@ function init() {
       await seed();
       await ensureAdmin();
     })().catch((err) => {
-      initPromise = null; // permite tentar de novo na próxima invocação
+      initPromise = null;
       throw err;
     });
   }
   return initPromise;
 }
 
-module.exports = { pool, all, get, run, exec, tx, init, pruneOldData };
+module.exports = { pool, all, get, run, exec, tx, init, pruneOldData, getSetting, setSetting, ANALYTICS_RETENTION_DAYS };

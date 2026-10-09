@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carrinho | TN'zone</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff'/%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%230a0a0a' stroke-width='6'/%3E%3Ctext x='50' y='68' font-size='56' fill='%230a0a0a' text-anchor='middle' font-family='Arial' font-weight='bold'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+.cart-layout{display:grid;grid-template-columns:1fr;gap:40px;padding-bottom:100px}
+@media(min-width:900px){.cart-layout{grid-template-columns:1.6fr 1fr}}
+.cart-row{display:flex;gap:18px;padding:22px 0;border-bottom:1px solid var(--line)}
+.cart-row img{width:110px;height:110px;object-fit:cover;background:var(--surface);flex-shrink:0}
+.cr-name{font-family:'Space Grotesk';font-size:1.05rem}
+.cr-meta{font-size:.8rem;color:var(--mute);margin-top:3px}
+.cr-row2{display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:10px}
+.cr-remove{font-size:.78rem;color:var(--mute);text-decoration:underline;text-underline-offset:2px}
+.summary-box{border:1px solid var(--line);padding:26px;height:fit-content}
+.summary-box h2{font-size:1.1rem;text-transform:uppercase;margin-bottom:18px}
+.summary-line{display:flex;justify-content:space-between;font-size:.9rem;padding:8px 0}
+.summary-total{display:flex;justify-content:space-between;font-family:'Space Grotesk';font-size:1.2rem;border-top:1px solid var(--line);margin-top:8px;padding-top:14px}
+.cart-empty{text-align:center;padding:100px 0}
+.cart-empty p{color:var(--mute);margin-bottom:22px}
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar"><div class="topbar-track" id="topbarTrack"><span>TN'zone</span></div></div>
+
+<header class="site-header" id="siteHeader">
+  <div class="bar">
+    <a class="logo" href="/index.html"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></a>
+    <nav class="main">
+      <a href="/index.html">Home</a>
+      <a href="/catalogo.html">Loja</a>
+      <a href="/index.html#sobre">Sobre nós</a>
+    </nav>
+    <div class="h-actions">
+      <button class="icon-btn search-only" id="searchToggle" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      <a class="icon-btn" href="/favoritos.html" aria-label="Favoritos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2 5 5.4 5c2 0 3.4 1 4.6 2.6C11.2 6 12.6 5 14.6 5 18 5 19.6 8.4 18 11.7 15.5 16.4 12 21 12 21z"/></svg><span class="icon-badge" id="favBadge">0</span></a>
+      <button class="icon-btn" id="cartToggle" aria-label="Carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16l-1.5 12h-13z"/><path d="M8 7a4 4 0 0 1 8 0"/></svg><span class="icon-badge" id="cartBadge">0</span></button>
+      <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<nav class="mobile-menu" id="mobileMenu">
+  <button class="mm-close" id="mmClose" aria-label="Fechar menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <a href="/index.html">Home</a>
+  <a href="/catalogo.html">Loja</a>
+  <a href="/favoritos.html">Favoritos</a>
+</nav>
+
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-panel">
+    <div class="search-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Buscar produtos, marcas…" autocomplete="off">
+      <button class="search-close" id="searchClose" aria-label="Fechar busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+
+<div class="drawer-scrim" id="cartScrim"></div>
+<aside class="drawer" id="cartDrawer" aria-label="Carrinho">
+  <div class="drawer-head"><h2>Carrinho</h2><button class="drawer-close" id="cartClose" aria-label="Fechar carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="drawer-body" id="cartDrawerBody"></div>
+  <div class="drawer-foot" id="cartDrawerFoot"></div>
+</aside>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<main>
+  <div class="wrap page-head">
+    <p class="crumbs"><a href="/index.html">Home</a> / Carrinho</p>
+    <h1>Seu carrinho</h1>
+  </div>
+  <div class="wrap">
+    <div id="cartApp"></div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap f-top">
+    <div class="f-brand"><div class="logo"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></div><p>Tênis e streetwear escolhidos a dedo em São Luís, Maranhão.</p></div>
+    <div><h4>Loja</h4><ul><li><a href="/catalogo.html">Todos os produtos</a></li><li><a href="/favoritos.html">Favoritos</a></li></ul></div>
+    <div><h4>Atendimento</h4><ul><li><a href="https://instagram.com/TNzone.ofc" target="_blank" rel="noopener">Fale conosco</a></li></ul></div>
+    <div><h4>Empresa</h4><ul><li><a href="/index.html#sobre">Sobre nós</a></li></ul></div>
+  </div>
+  <div class="wrap f-bottom"><span>© 2026 TN'zone. Todos os direitos reservados.</span><span>São Luís, MA</span></div>
+</footer>
+
+<script src="/js/mock-api.js"></script>
+<script src="/js/shop.js"></script>
+<script>
+(function(){
+  var money = RSShop.money;
+  var app = document.getElementById('cartApp');
+
+  function rowHtml(it){
+    var key = RSShop.lineKey(it);
+    var img = it.image ? '<img src="'+it.image+'" alt="">' : '<img alt="">';
+    var meta = [it.size?'Tam. '+it.size:null, it.color||null].filter(Boolean).join(' · ');
+    return '<div class="cart-row" data-key="'+key+'">'+img+
+      '<div style="flex:1">'+
+        '<div class="cr-name">'+it.name+'</div>'+
+        (meta?'<div class="cr-meta">'+meta+'</div>':'')+
+        '<div class="cr-row2">'+
+          '<div class="qty-ctrl"><button data-act="dec">−</button><span>'+it.quantity+'</span><button data-act="inc">+</button></div>'+
+          '<div style="font-family:\'Space Grotesk\';font-size:1.05rem">'+money(it.price*it.quantity)+'</div>'+
+        '</div>'+
+        '<button class="cr-remove" data-act="remove">Remover</button>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function render(){
+    var cart = RSShop.getCart();
+    if(!cart.length){
+      app.innerHTML = '<div class="cart-empty"><p>Seu carrinho está vazio.</p><a class="btn btn-dark" style="width:auto;display:inline-flex" href="/catalogo.html">EXPLORAR A LOJA</a></div>';
+      return;
+    }
+    var subtotal = RSShop.cartSubtotal(cart);
+    app.innerHTML =
+      '<div class="cart-layout">'+
+        '<div id="cartRows">'+cart.map(rowHtml).join('')+
+          '<a href="/catalogo.html" style="display:inline-block;margin-top:20px;font-size:.85rem;text-decoration:underline">← Continuar comprando</a>'+
+        '</div>'+
+        '<div class="summary-box">'+
+          '<h2>Resumo</h2>'+
+          '<div class="summary-line"><span>Subtotal</span><span>'+money(subtotal)+'</span></div>'+
+          '<div class="summary-line"><span>Frete</span><span>A gente calcula no WhatsApp, depois da compra</span></div>'+
+          '<div class="summary-total"><span>Total</span><span>'+money(subtotal)+'</span></div>'+
+          '<a class="btn btn-dark" style="margin-top:20px" href="/checkout.html?modo=carrinho">IR PARA PAGAMENTO</a>'+
+        '</div>'+
+      '</div>';
+    document.getElementById('cartRows').addEventListener('click', function(e){
+      var row = e.target.closest('.cart-row'); if(!row) return;
+      var key = row.dataset.key, act = e.target.dataset.act;
+      if(act === 'remove'){ RSShop.removeFromCart(key); render(); return; }
+      if(act === 'inc' || act === 'dec'){
+        var cur = RSShop.getCart().find(function(i){ return RSShop.lineKey(i) === key; });
+        if(!cur) return;
+        var next = cur.quantity + (act==='inc'?1:-1);
+        if(next < 1){ RSShop.removeFromCart(key); } else { RSShop.updateCartQuantity(key, next); }
+        render();
+      }
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

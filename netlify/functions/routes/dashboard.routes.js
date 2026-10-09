@@ -12,10 +12,9 @@ router.get(
     const totalProducts = (await db.get('SELECT COUNT(*) AS n FROM products')).n;
     const activeProducts = (await db.get('SELECT COUNT(*) AS n FROM products WHERE active = 1')).n;
     const outOfStock = (await db.get('SELECT COUNT(*) AS n FROM products WHERE stock <= 0')).n;
-    const pendingFeedbacks = (await db.get("SELECT COUNT(*) AS n FROM feedbacks WHERE status = 'pending'")).n;
-    const approvedFeedbacks = (await db.get("SELECT COUNT(*) AS n FROM feedbacks WHERE status = 'approved'")).n;
+    const totalCategories = (await db.get('SELECT COUNT(*) AS n FROM categories')).n;
     const recentProducts = await db.all(
-      'SELECT id, name, slug, price, created_at FROM products ORDER BY created_at DESC LIMIT 5'
+      'SELECT id, name, slug, price, active, created_at FROM products ORDER BY created_at DESC LIMIT 5'
     );
     const recentActivity = await db.all(
       `SELECT l.action, l.details, l.created_at, a.email AS admin_email
@@ -27,8 +26,7 @@ router.get(
       totalProducts: Number(totalProducts),
       activeProducts: Number(activeProducts),
       outOfStock: Number(outOfStock),
-      pendingFeedbacks: Number(pendingFeedbacks),
-      approvedFeedbacks: Number(approvedFeedbacks),
+      totalCategories: Number(totalCategories),
       recentProducts,
       recentActivity,
     });

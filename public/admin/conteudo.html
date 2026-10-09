@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conteúdo da Home | Painel TN'zone</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext x='50' y='68' font-size='60' fill='white' text-anchor='middle' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../css/catalogo.css">
+<style>
+.content-card{border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin-bottom:24px;background:var(--black-1)}
+.content-card h2{font-size:1.05rem;margin-bottom:6px}
+.content-card .hint{color:var(--grey);font-size:.8rem;margin-bottom:18px}
+.repeat-row{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;position:relative}
+.repeat-row .row-remove{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--grey);cursor:pointer;font-size:1rem}
+.repeat-row .row-remove:hover{color:#e05a5a}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.two-col{grid-template-columns:1fr}}
+.add-row-btn{border:1px dashed var(--line-gold);background:none;color:var(--gold-text);padding:12px;width:100%;border-radius:var(--radius);cursor:pointer;font-size:.85rem}
+.save-bar{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:12px;padding:16px 0;background:var(--black-deep)}
+</style>
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-logo">
+      <span>TN'zone <em style="color:var(--gold-bright); font-style:normal;">Admin</em></span>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html">Dashboard</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="categorias.html">Categorias</a>
+      <a href="feedbacks.html">Feedbacks</a>
+      <a href="analytics.html">Análise de usuários</a>
+      <a href="conteudo.html" class="active">Conteúdo da Home</a>
+      <a href="#" id="logoutBtn">Sair</a>
+    </nav>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Conteúdo da Home</h1>
+      <span class="admin-email" id="adminEmail"></span>
+    </div>
+
+    <div id="loadingMsg" style="color:var(--grey)">Carregando…</div>
+    <form id="contentForm" style="display:none">
+
+      <div class="content-card">
+        <h2>Barra de avisos (topo do site)</h2>
+        <p class="hint">Textos que giram no topo de todas as páginas. Ex.: "Frete grátis acima de R$ 499".</p>
+        <div id="topbarRows"></div>
+        <button type="button" class="add-row-btn" id="addTopbar">+ Adicionar aviso</button>
+      </div>
+
+      <div class="content-card">
+        <h2>Imagens do banner principal (hero)</h2>
+        <p class="hint">O banner é só imagem, sem texto ou botão. Troca sozinho a cada 4 segundos e também dá pra arrastar com o dedo, o mouse ou o scroll.</p>
+        <div id="heroRows"></div>
+        <button type="button" class="add-row-btn" id="addHero">+ Adicionar imagem</button>
+      </div>
+
+      <div class="content-card">
+        <h2>Benefícios (faixa com 4 ícones)</h2>
+        <div id="benefitRows"></div>
+        <button type="button" class="add-row-btn" id="addBenefit">+ Adicionar benefício</button>
+      </div>
+
+      <div class="content-card">
+        <h2>Banner promocional</h2>
+        <label class="checkbox-row" style="margin-bottom:14px">
+          <input type="checkbox" id="promoActive"> Exibir banner promocional na home
+        </label>
+        <div class="form-field full"><label>Texto pequeno (eyebrow)</label><input type="text" id="promoEyebrow"></div>
+        <div class="form-field full"><label>Título</label><input type="text" id="promoTitle"></div>
+        <div class="form-field full"><label>Subtítulo</label><input type="text" id="promoSubtitle"></div>
+        <div class="two-col">
+          <div class="form-field full"><label>Texto do botão</label><input type="text" id="promoCtaLabel"></div>
+          <div class="form-field full"><label>Link do botão</label><input type="text" id="promoCtaLink" placeholder="/catalogo.html?promo=1"></div>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button type="submit" class="btn btn-gold" id="saveBtn">Salvar alterações</button>
+      </div>
+    </form>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/admin-common.js"></script>
+<script src="../js/admin-conteudo.js"></script>
+</body>
+</html>

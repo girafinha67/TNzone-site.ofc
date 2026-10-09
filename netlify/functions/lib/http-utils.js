@@ -26,6 +26,14 @@ function slugify(text) {
   );
 }
 
+// Escapa os curingas do SQL LIKE/ILIKE (%, _ e o próprio \) antes de montar
+// um padrão "%texto%" com entrada livre do usuário — sem isso, buscar por
+// "50%" ou "combo_promo" trata % e _ como curinga em vez de caractere
+// literal, e a busca no catálogo devolve resultados errados.
+function escapeLike(text) {
+  return String(text).replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
 function clientIp(req) {
   const fwd = req.headers['x-forwarded-for'];
   if (fwd) return String(fwd).split(',')[0].trim();
@@ -37,13 +45,11 @@ function asyncHandler(fn) {
   return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 }
 
-// Valida um :id de rota como inteiro positivo. Evita passar NaN adiante para
-// o Postgres (o que gera erro 500 de "invalid input syntax for type integer"
-// em vez de um 400 claro para IDs inválidos/forjados).
+// Valida um :id de rota como inteiro positivo, evitando repassar NaN ao Postgres.
 function parseIntId(raw) {
   if (raw == null || raw === '') return null;
   const n = Number(raw);
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-module.exports = { parseCookies, slugify, clientIp, asyncHandler, parseIntId };
+module.exports = { parseCookies, slugify, escapeLike, clientIp, asyncHandler, parseIntId };

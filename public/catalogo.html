@@ -2,181 +2,330 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Catálogo — TNzone</title>
-<meta name="description" content="Catálogo completo de tênis, camisas e calças da TNzone. Filtre por categoria, tamanho e preço, e compre direto pelo WhatsApp.">
-<meta property="og:title" content="Catálogo — TNzone">
-<meta property="og:description" content="Tênis, camisas e calças selecionados. Filtre por categoria, tamanho e preço.">
-<meta property="og:image" content="/img/og.jpg">
-<link rel="icon" href="/img/favicon.png">
-<link rel="stylesheet" href="/css/style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loja | TN'zone São Luís</title>
+<meta name="description" content="Catálogo completo da TN'zone: todos os modelos disponíveis em São Luís, Maranhão.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff'/%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%230a0a0a' stroke-width='6'/%3E%3Ctext x='50' y='68' font-size='56' fill='%230a0a0a' text-anchor='middle' font-family='Arial' font-weight='bold'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+.shop-layout{display:grid;grid-template-columns:1fr;gap:32px}
+@media(min-width:900px){.shop-layout{grid-template-columns:220px 1fr}}
+.filter-group{margin-bottom:30px}
+.filter-group h4{font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-bottom:12px}
+.filter-list{display:flex;flex-direction:column;gap:9px}
+.filter-list label{display:flex;align-items:center;gap:9px;font-size:.86rem;cursor:pointer}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:28px}
+.toolbar-count{font-size:.8rem;color:var(--mute)}
+.sort-select{border:1px solid var(--line);padding:10px 14px;font-size:.82rem;background:var(--paper)}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+.chip{font-size:.78rem;border:1px solid var(--line);padding:7px 13px;display:inline-flex;align-items:center;gap:8px}
+.chip button{font-size:.9rem;line-height:1}
+.mobile-filters-toggle{display:none;border:1px solid var(--ink);padding:10px 16px;font-size:.8rem}
+@media(max-width:899px){.mobile-filters-toggle{display:inline-flex}.filters-panel{display:none}.filters-panel.open{display:block;margin-bottom:28px}}
+.pagination{display:flex;justify-content:center;gap:8px;margin-top:56px}
+.pagination button{width:36px;height:36px;border:1px solid var(--line);font-size:.82rem}
+.pagination button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.empty{color:var(--mute);padding:60px 0;text-align:center;display:none}
+</style>
 </head>
 <body>
 
-<div id="site-header"></div>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="shoe" viewBox="0 0 200 100" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 78 C8 62 22 58 34 56 C50 53 58 44 66 34 C74 24 84 18 98 18 C110 18 116 24 122 30 C130 38 140 42 154 44 C170 46 186 52 190 66 C192 74 188 80 178 82 L20 82 C12 82 8 82 8 78 Z"/>
+    <path d="M34 56 C42 62 56 66 76 66 C104 66 128 60 146 50"/>
+    <path d="M66 34 L78 52 M84 27 L94 50 M100 21 L108 52"/>
+    <path d="M8 78 L190 78" stroke-width="1.2" opacity=".5"/>
+  </symbol>
+</svg>
 
-<div class="container">
-  <div class="section" style="padding-bottom:20px;">
-    <div class="section-head">
-      <div>
-        <h2>Catálogo</h2>
-        <div class="sub" id="result-count">Carregando produtos...</div>
-      </div>
-    </div>
+<div class="topbar" id="topbar"><div class="topbar-track" id="topbarTrack"><span>TN'zone</span></div></div>
 
-    <div class="filters-bar glass" style="padding:14px 16px;">
-      <div class="search-input">
-        🔎 <input type="text" id="f-search" placeholder="Buscar produto...">
-      </div>
-      <select id="f-category"><option value="">Todas as categorias</option></select>
-      <select id="f-type">
-        <option value="">Todos os tipos</option>
-        <option value="tenis">Tênis</option>
-        <option value="camisa">Camisas</option>
-        <option value="calca">Calças</option>
-        <option value="outro">Outros</option>
-      </select>
-      <select id="f-size"><option value="">Todos os tamanhos</option></select>
-      <select id="f-price">
-        <option value="">Qualquer preço</option>
-        <option value="0-150">Até R$ 150</option>
-        <option value="150-300">R$ 150 – R$ 300</option>
-        <option value="300-600">R$ 300 – R$ 600</option>
-        <option value="600-99999">Acima de R$ 600</option>
-      </select>
-      <select id="f-stock">
-        <option value="">Todos</option>
-        <option value="1">Somente em estoque</option>
-      </select>
-      <select id="f-sort">
-        <option value="recent">Mais recentes</option>
-        <option value="price-asc">Menor preço</option>
-        <option value="price-desc">Maior preço</option>
-        <option value="featured">Destaque</option>
-      </select>
-      <button type="button" id="clear-filters" class="btn btn-ghost btn-sm" style="display:none;">Limpar filtros</button>
+<header class="site-header" id="siteHeader">
+  <div class="bar">
+    <a class="logo" href="/index.html"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></a>
+    <nav class="main">
+      <a href="/index.html">Home</a>
+      <a class="active" href="/catalogo.html">Loja</a>
+      <a href="/index.html#sobre">Sobre nós</a>
+    </nav>
+    <div class="h-actions">
+      <button class="icon-btn search-only" id="searchToggle" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      <a class="icon-btn" href="/favoritos.html" aria-label="Favoritos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2 5 5.4 5c2 0 3.4 1 4.6 2.6C11.2 6 12.6 5 14.6 5 18 5 19.6 8.4 18 11.7 15.5 16.4 12 21 12 21z"/></svg><span class="icon-badge" id="favBadge">0</span></a>
+      <button class="icon-btn" id="cartToggle" aria-label="Carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16l-1.5 12h-13z"/><path d="M8 7a4 4 0 0 1 8 0"/></svg><span class="icon-badge" id="cartBadge">0</span></button>
+      <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
   </div>
+</header>
 
-  <div class="product-grid" id="catalog-grid" style="padding-bottom:60px;"></div>
+<nav class="mobile-menu" id="mobileMenu">
+  <button class="mm-close" id="mmClose" aria-label="Fechar menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <a href="/index.html">Home</a>
+  <a href="/catalogo.html">Loja</a>
+  <a href="/favoritos.html">Favoritos</a>
+  <a href="/index.html#sobre">Sobre nós</a>
+</nav>
+
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-panel">
+    <div class="search-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Buscar produtos, marcas…" autocomplete="off">
+      <button class="search-close" id="searchClose" aria-label="Fechar busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
 </div>
 
-<div id="site-footer"></div>
+<div class="drawer-scrim" id="cartScrim"></div>
+<aside class="drawer" id="cartDrawer" aria-label="Carrinho">
+  <div class="drawer-head"><h2>Carrinho</h2><button class="drawer-close" id="cartClose" aria-label="Fechar carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="drawer-body" id="cartDrawerBody"></div>
+  <div class="drawer-foot" id="cartDrawerFoot"></div>
+</aside>
 
-<script src="/js/api.js"></script>
-<script src="/js/layout.js"></script>
-<script src="/js/product-card.js"></script>
+<div class="toast-stack" id="toastStack"></div>
+
+<main>
+  <div class="wrap page-head">
+    <p class="eyebrow" id="pageEyebrow">TN'ZONE / SÃO LUÍS, MA</p>
+    <h1 id="pageTitle">Loja</h1>
+  </div>
+
+  <div class="wrap">
+    <button class="mobile-filters-toggle" id="filtersToggle">FILTRAR E ORDENAR</button>
+
+    <div class="shop-layout">
+      <aside class="filters-panel" id="filtersPanel">
+        <div class="filter-group">
+          <h4>Categoria</h4>
+          <div class="filter-list" id="categoryFilters"><label><input type="radio" name="cat" value="" checked> Todas</label></div>
+        </div>
+        <div class="filter-group">
+          <h4>Marca</h4>
+          <div class="filter-list" id="brandFilters"><span style="color:var(--mute);font-size:.8rem">Carregando…</span></div>
+        </div>
+        <div class="filter-group">
+          <h4>Preço</h4>
+          <div class="filter-list">
+            <label><input type="radio" name="price" value=""> Todos</label>
+            <label><input type="radio" name="price" value="0-200"> Até R$ 200</label>
+            <label><input type="radio" name="price" value="200-400"> R$ 200 – R$ 400</label>
+            <label><input type="radio" name="price" value="400-99999"> Acima de R$ 400</label>
+          </div>
+        </div>
+        <div class="filter-group">
+          <label style="display:flex;gap:9px;align-items:center;font-size:.86rem;cursor:pointer">
+            <input type="checkbox" id="onlyPromo"> Só promoções
+          </label>
+        </div>
+      </aside>
+
+      <div>
+        <div class="toolbar">
+          <span class="toolbar-count" id="resultCount"></span>
+          <select class="sort-select" id="sortSelect">
+            <option value="relevant">Mais procurados</option>
+            <option value="recent">Novidades</option>
+            <option value="price_asc">Menor preço</option>
+            <option value="price_desc">Maior preço</option>
+          </select>
+        </div>
+        <div class="chip-row" id="chipRow"></div>
+        <div class="products" id="productGrid"></div>
+        <p class="empty" id="emptyMsg">Não achamos nenhum modelo com esses filtros.</p>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap f-top">
+    <div class="f-brand"><div class="logo"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></div><p>Tênis e streetwear escolhidos a dedo em São Luís, Maranhão.</p></div>
+    <div><h4>Loja</h4><ul>
+      <li><a href="/catalogo.html">Todos os produtos</a></li>
+      <li><a href="/favoritos.html">Favoritos</a></li>
+    </ul></div>
+    <div><h4>Atendimento</h4><ul>
+      <li><a href="https://instagram.com/TNzone.ofc" target="_blank" rel="noopener">Fale conosco</a></li>
+      <li><a href="/index.html#sobre">Entrega e trocas</a></li>
+      <li><a href="/carrinho.html">Meu carrinho</a></li>
+    </ul></div>
+    <div><h4>Empresa</h4><ul>
+      <li><a href="/index.html#sobre">Sobre nós</a></li>
+      <li><a href="https://instagram.com/TNzone.ofc" target="_blank" rel="noopener">Instagram</a></li>
+    </ul></div>
+  </div>
+  <div class="wrap f-bottom"><span>© 2026 TN'zone. Todos os direitos reservados.</span><span>São Luís, MA</span></div>
+</footer>
+
+<script src="/js/mock-api.js"></script>
+<script src="/js/shop.js"></script>
 <script>
-const params = new URLSearchParams(location.search);
-let allSizes = new Set();
+(function(){
+  var qs = new URLSearchParams(location.search);
+  var state = {
+    category: qs.get('category') || '',
+    brand: qs.get('brand') || '',
+    price: qs.get('price') || '',
+    promo: qs.get('promo') === '1',
+    sort: qs.get('sort') || 'relevant',
+    q: qs.get('q') || '',
+    page: parseInt(qs.get('page'), 10) || 1,
+  };
 
-async function init() {
-  renderLayout('catalogo');
+  var grid = document.getElementById('productGrid');
+  var empty = document.getElementById('emptyMsg');
+  var pagination = document.getElementById('pagination');
+  var resultCount = document.getElementById('resultCount');
+  var chipRow = document.getElementById('chipRow');
 
-  try {
-    const { categories } = await API.get('/api/categories');
-    const sel = document.getElementById('f-category');
-    categories.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.slug; opt.textContent = c.name;
-      sel.appendChild(opt);
-    });
-  } catch {}
-
-  if (params.get('category')) document.getElementById('f-category').value = params.get('category');
-  if (params.get('type')) document.getElementById('f-type').value = params.get('type');
-
-  ['f-search', 'f-category', 'f-type', 'f-size', 'f-price', 'f-stock', 'f-sort'].forEach(id => {
-    const el = document.getElementById(id);
-    el.addEventListener(id === 'f-search' ? 'input' : 'change', debounce(loadProducts, 250));
-  });
-
-  document.getElementById('clear-filters').addEventListener('click', () => {
-    document.getElementById('f-search').value = '';
-    document.getElementById('f-category').value = '';
-    document.getElementById('f-type').value = '';
-    document.getElementById('f-size').value = '';
-    document.getElementById('f-price').value = '';
-    document.getElementById('f-stock').value = '';
-    document.getElementById('f-sort').value = 'recent';
-    history.replaceState(null, '', location.pathname);
-    loadProducts();
-  });
-
-  loadProducts();
-}
-
-function debounce(fn, ms) {
-  let t;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
-}
-
-function hasActiveFilters() {
-  return Boolean(
-    document.getElementById('f-search').value.trim() ||
-    document.getElementById('f-category').value ||
-    document.getElementById('f-type').value ||
-    document.getElementById('f-size').value ||
-    document.getElementById('f-price').value ||
-    document.getElementById('f-stock').value
-  );
-}
-
-function sortProducts(products, sort) {
-  const list = [...products];
-  if (sort === 'price-asc') list.sort((a, b) => (a.promo_price || a.price) - (b.promo_price || b.price));
-  else if (sort === 'price-desc') list.sort((a, b) => (b.promo_price || b.price) - (a.promo_price || a.price));
-  else if (sort === 'featured') list.sort((a, b) => Number(b.featured) - Number(a.featured));
-  // 'recent' já vem ordenado por created_at DESC da API.
-  return list;
-}
-
-async function loadProducts() {
-  const q = new URLSearchParams();
-  const search = document.getElementById('f-search').value.trim();
-  const category = document.getElementById('f-category').value;
-  const type = document.getElementById('f-type').value;
-  const size = document.getElementById('f-size').value;
-  const price = document.getElementById('f-price').value;
-  const stock = document.getElementById('f-stock').value;
-  const sort = document.getElementById('f-sort').value;
-  if (params.get('featured')) q.set('featured', '1');
-
-  if (search) q.set('q', search);
-  if (category) q.set('category', category);
-  if (type) q.set('type', type);
-  if (size) q.set('size', size);
-  if (stock) q.set('inStock', stock);
-  if (price) {
-    const [min, max] = price.split('-');
-    q.set('minPrice', min); q.set('maxPrice', max);
+  document.getElementById('sortSelect').value = state.sort;
+  if(state.q){
+    document.getElementById('pageTitle').textContent = 'Resultados para "' + state.q + '"';
+    document.getElementById('pageEyebrow').textContent = 'BUSCA';
+  } else if(state.promo){
+    document.getElementById('pageTitle').textContent = 'Ofertas';
   }
 
-  document.getElementById('clear-filters').style.display = hasActiveFilters() ? '' : 'none';
+  function syncUrl(){
+    var p = new URLSearchParams();
+    if(state.category) p.set('category', state.category);
+    if(state.brand) p.set('brand', state.brand);
+    if(state.price) p.set('price', state.price);
+    if(state.promo) p.set('promo', '1');
+    if(state.sort !== 'relevant') p.set('sort', state.sort);
+    if(state.q) p.set('q', state.q);
+    if(state.page > 1) p.set('page', state.page);
+    history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p.toString() : ''));
+  }
 
-  try {
-    const { products: rawProducts } = await API.get(`/api/products?${q.toString()}`);
-    const products = sortProducts(rawProducts, sort);
+  function chipsHtml(){
+    var chips = [];
+    if(state.category) chips.push(['category', 'Categoria: ' + state.category]);
+    if(state.brand) chips.push(['brand', 'Marca: ' + state.brand]);
+    if(state.price) chips.push(['price', 'Preço: ' + state.price.replace('-', ' – ')]);
+    if(state.promo) chips.push(['promo', 'Só promoções']);
+    if(state.q) chips.push(['q', 'Busca: ' + state.q]);
+    chipRow.innerHTML = chips.map(function(c){
+      return '<span class="chip">'+c[1]+' <button data-clear="'+c[0]+'" aria-label="Remover filtro">×</button></span>';
+    }).join('');
+  }
 
-    products.forEach(p => (p.sizes || []).forEach(s => allSizes.add(s)));
-    const sizeSel = document.getElementById('f-size');
-    if (sizeSel.options.length <= 1) {
-      [...allSizes].sort().forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s; opt.textContent = s;
-        sizeSel.appendChild(opt);
-      });
+  function load(){
+    var params = new URLSearchParams();
+    params.set('pageSize', 12);
+    params.set('page', state.page);
+    params.set('sort', state.sort);
+    if(state.category) params.set('category', state.category);
+    if(state.brand) params.set('brand', state.brand);
+    if(state.promo) params.set('promo', '1');
+    if(state.q) params.set('q', state.q);
+    if(state.price){
+      var parts = state.price.split('-');
+      params.set('minPrice', parts[0]); params.set('maxPrice', parts[1]);
     }
+    grid.innerHTML = '';
+    empty.style.display = 'none';
+    pagination.innerHTML = '';
+    resultCount.textContent = 'Carregando…';
+    chipsHtml();
+    syncUrl();
 
-    document.getElementById('result-count').textContent = `${products.length} produto${products.length === 1 ? '' : 's'} encontrado${products.length === 1 ? '' : 's'}`;
-    renderProductGrid('catalog-grid', products);
-  } catch (e) {
-    document.getElementById('result-count').textContent = 'Não foi possível carregar os produtos.';
+    fetch('/api/products?' + params.toString())
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var list = (data && data.products) || [];
+        renderBrandFilters((data && data.brands) || []);
+        resultCount.textContent = (data.total || 0) + ' modelo' + (data.total === 1 ? '' : 's');
+        if(!list.length){ empty.style.display = 'block'; return; }
+        var byId = {}; list.forEach(function(p){ byId[p.id]=p; });
+        grid.innerHTML = list.map(RSShop.productCardHtml).join('');
+        RSShop.wireProductGrid(grid, byId);
+        renderPagination(data.page, data.totalPages);
+      })
+      .catch(function(){
+        resultCount.textContent = '';
+        empty.textContent = 'Não deu pra carregar o catálogo agora. Tenta de novo daqui a pouco.';
+        empty.style.display = 'block';
+      });
   }
-}
 
-init();
-subscribeRealtime(() => loadProducts());
+  function renderPagination(page, totalPages){
+    if(totalPages <= 1) return;
+    var html = '';
+    for(var i=1;i<=totalPages;i++){
+      html += '<button class="'+(i===page?'active':'')+'" data-page="'+i+'">'+i+'</button>';
+    }
+    pagination.innerHTML = html;
+  }
+  pagination.addEventListener('click', function(e){
+    var btn = e.target.closest('button'); if(!btn) return;
+    state.page = parseInt(btn.dataset.page, 10);
+    window.scrollTo({top:0, behavior:'smooth'});
+    load();
+  });
+
+  var brandsRendered = false;
+  function renderBrandFilters(brands){
+    if(brandsRendered || !brands.length) return;
+    brandsRendered = true;
+    var wrap = document.getElementById('brandFilters');
+    wrap.innerHTML = '<label><input type="radio" name="brand" value="" '+(!state.brand?'checked':'')+'> Todas</label>' +
+      brands.map(function(b){
+        return '<label><input type="radio" name="brand" value="'+b+'" '+(state.brand===b?'checked':'')+'> '+b+'</label>';
+      }).join('');
+    wrap.addEventListener('change', function(e){
+      state.brand = e.target.value; state.page = 1; load();
+    });
+  }
+
+  fetch('/api/categories').then(function(r){return r.json();}).then(function(data){
+    var cats = (data && data.categories) || [];
+    var wrap = document.getElementById('categoryFilters');
+    wrap.innerHTML = '<label><input type="radio" name="cat" value="" '+(!state.category?'checked':'')+'> Todas</label>' +
+      cats.map(function(c){
+        return '<label><input type="radio" name="cat" value="'+c.slug+'" '+(state.category===c.slug?'checked':'')+'> '+c.name+'</label>';
+      }).join('');
+    wrap.addEventListener('change', function(e){
+      state.category = e.target.value; state.page = 1; load();
+    });
+  }).catch(function(){});
+
+  document.querySelectorAll('input[name="price"]').forEach(function(r){
+    if(r.value === state.price) r.checked = true;
+  });
+  document.querySelectorAll('input[name="price"]').forEach(function(r){
+    r.addEventListener('change', function(){ state.price = r.value; state.page = 1; load(); });
+  });
+  document.getElementById('onlyPromo').checked = state.promo;
+  document.getElementById('onlyPromo').addEventListener('change', function(e){
+    state.promo = e.target.checked; state.page = 1; load();
+  });
+  document.getElementById('sortSelect').addEventListener('change', function(e){
+    state.sort = e.target.value; state.page = 1; load();
+  });
+  chipRow.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-clear]'); if(!btn) return;
+    var key = btn.dataset.clear;
+    if(key==='category'){ state.category=''; document.querySelector('input[name=cat][value=""]').checked = true; }
+    if(key==='brand'){ state.brand=''; var r=document.querySelector('input[name=brand][value=""]'); if(r) r.checked = true; }
+    if(key==='price'){ state.price=''; document.querySelector('input[name=price][value=""]').checked = true; }
+    if(key==='promo'){ state.promo=false; document.getElementById('onlyPromo').checked = false; }
+    if(key==='q'){ state.q=''; }
+    state.page = 1; load();
+  });
+
+  document.getElementById('filtersToggle').addEventListener('click', function(){
+    document.getElementById('filtersPanel').classList.toggle('open');
+  });
+
+  load();
+})();
 </script>
 </body>
 </html>

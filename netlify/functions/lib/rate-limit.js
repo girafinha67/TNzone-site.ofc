@@ -1,11 +1,5 @@
 'use strict';
 
-// Rate limiting baseado em Postgres (tabela rate_hits), em vez de um Map em
-// memória. Necessário porque Netlify Functions são serverless: cada cold
-// start zera qualquer estado em memória, então um limitador só-em-memória
-// pode ser contornado facilmente. Este é leve o suficiente (uma query
-// indexada por bucket+ip+created_at) para não pesar no tempo de resposta.
-
 const db = require('./db');
 
 async function isRateLimited(bucket, ip, maxAttempts, windowMs) {

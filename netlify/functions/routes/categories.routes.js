@@ -4,7 +4,6 @@ const express = require('express');
 const db = require('../lib/db');
 const { slugify, asyncHandler, parseIntId } = require('../lib/http-utils');
 const { log } = require('../lib/auth');
-const { broadcast } = require('../lib/realtime');
 
 const router = express.Router();
 
@@ -20,6 +19,7 @@ async function uniqueSlug(name, ignoreId) {
   }
 }
 
+// GET /api/categories — pública mostra só ativas; admin vê todas.
 router.get(
   '/categories',
   asyncHandler(async (req, res) => {
@@ -35,16 +35,15 @@ router.post(
   '/admin/categories',
   asyncHandler(async (req, res) => {
     const b = req.body;
-    if (!b.name) return res.status(400).json({ error: 'Nome é obrigatório.' });
+    if (!b.name || !String(b.name).trim()) return res.status(400).json({ error: 'Nome é obrigatório.' });
     const slug = await uniqueSlug(b.name);
     const maxRow = await db.get('SELECT MAX(order_index) AS m FROM categories');
     const maxOrder = maxRow.m || 0;
     const info = await db.run(
-      'INSERT INTO categories (name, slug, image, order_index, active) VALUES (?, ?, ?, ?, ?)',
-      [b.name, slug, b.image || null, b.order_index ?? maxOrder + 1, b.active === false ? 0 : 1]
+      'INSERT INTO categories (name, slug, image, description, order_index, active) VALUES (?, ?, ?, ?, ?, ?)',
+      [String(b.name).trim(), slug, b.image || null, b.description || null, b.order_index ?? maxOrder + 1, b.active === false ? 0 : 1]
     );
     await log(req.admin.id, 'category_create', { id: info.lastInsertRowid, name: b.name });
-    broadcast('changed', { entity: 'categories' });
     res.status(201).json({ id: info.lastInsertRowid, slug });
   })
 );
@@ -62,18 +61,18 @@ router.put(
     }
     const slug = b.name && b.name !== existing.name ? await uniqueSlug(b.name, id) : existing.slug;
     await db.run(
-      'UPDATE categories SET name = ?, slug = ?, image = ?, order_index = ?, active = ? WHERE id = ?',
+      'UPDATE categories SET name = ?, slug = ?, image = ?, description = ?, order_index = ?, active = ? WHERE id = ?',
       [
         b.name ?? existing.name,
         slug,
         b.image ?? existing.image,
+        b.description !== undefined ? b.description : existing.description,
         b.order_index ?? existing.order_index,
         b.active != null ? (b.active ? 1 : 0) : existing.active,
         id,
       ]
     );
     await log(req.admin.id, 'category_update', { id });
-    broadcast('changed', { entity: 'categories' });
     res.status(200).json({ ok: true, slug });
   })
 );
@@ -88,7 +87,6 @@ router.delete(
     await db.run('UPDATE products SET category_id = NULL WHERE category_id = ?', [id]);
     await db.run('DELETE FROM categories WHERE id = ?', [id]);
     await log(req.admin.id, 'category_delete', { id, name: existing.name });
-    broadcast('changed', { entity: 'categories' });
     res.status(200).json({ ok: true });
   })
 );

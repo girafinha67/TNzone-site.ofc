@@ -1,124 +1,248 @@
-# TN Zone — Loja virtual de tênis e streetwear (versão Netlify)
+# TN'zone — site + painel administrativo
 
-Catálogo de tênis, camisas e calças com compra via WhatsApp e painel
-administrativo completo (produtos, categorias, página inicial, feedbacks
-moderados, configurações gerais).
+Landing page e catálogo da TN'zone (São Luís — MA), com painel de
+administração para cadastrar produtos de verdade (sem produtos fictícios
+no código). Backend em Node/Express rodando como Netlify Function, com
+Postgres (Supabase) como banco de dados.
 
-Esta é a versão **adaptada para rodar no Netlify**. A versão original (Node
-puro + SQLite em arquivo + uploads em disco + SSE) não funciona em Netlify
-porque Functions são serverless e stateless — sem processo persistente, sem
-disco durável e sem conexões longas. Trocamos:
-
-| Original                          | Versão Netlify                                   |
-|------------------------------------|---------------------------------------------------|
-| Servidor HTTP próprio (`.listen`)  | Netlify Function única (Express + `serverless-http`), acionada via redirect `/api/*` |
-| SQLite em arquivo (`node:sqlite`)  | Postgres externo (`pg`) — ex. Neon, Supabase, Railway |
-| Upload salvo em `uploads/` no disco| Cloudinary (upload assinado, URL pública direta)  |
-| Server-Sent Events (`/api/events`) | Polling simples no frontend (15s) — ver `public/js/api.js` |
-| Frontend servido pelo mesmo processo| Frontend estático servido direto pela CDN do Netlify (`public/`) |
-
-## Estrutura do projeto
+## Estrutura
 
 ```
-netlify.toml                 # redirect /api/* -> function, publish dir
+public/
+  index.html          → home (busca produtos em /api/products)
+  catalogo.html        → catálogo completo, com filtro por categoria
+  admin/                → painel administrativo (login, produtos, categorias, analytics)
+  js/, css/, assets/    → scripts e estilos do site e do admin
+netlify/
+  functions/api.js      → função serverless única que expõe toda a API em /api/*
+  functions/lib/         → banco de dados, autenticação, upload de imagens, analytics
+  functions/routes/      → rotas (produtos, categorias, auth, uploads, analytics)
+netlify.toml
 package.json
-netlify/functions/
-  api.js                      # Express app + serverless-http (handler único)
-  lib/
-    db.js                      # pool Postgres + schema + seed
-    auth.js                    # sessão, hash de senha, rate limit, log
-    http-utils.js               # cookies, slugify, wrapper async
-    upload.js                    # upload/exclusão assinados no Cloudinary
-    realtime.js                   # no-op (SSE não existe em serverless)
-  routes/
-    auth.routes.js, products.routes.js, categories.routes.js,
-    feedbacks.routes.js, settings.routes.js, dashboard.routes.js
-public/                       # frontend (site + admin) — publicado como estático
-  css/, js/, admin/, index.html, catalogo.html, produto.html, feedbacks.html
-.env.example
 ```
 
-## Deploy no Netlify — passo a passo
+O design da home e do catálogo (preto e branco, tipografia Space Grotesk/Inter)
+não foi alterado — só a origem dos produtos, que agora vem do banco em vez de
+estar fixa no HTML.
 
-### 1. Supabase (banco + imagens)
+## 1. Banco de dados (Supabase)
 
-Crie um projeto em [supabase.com](https://supabase.com). Em
-`Project Settings → Database → Connection string`, copie a URI do
-**Session Pooler** e configure `SUPABASE_DB_POOLER_URL`.
+1. Crie um projeto gratuito em https://supabase.com.
+2. Em **Project Settings → Database**, copie a "Connection string" no modo
+   *Connection pooling* (porta 6543). Essa é a variável `SUPABASE_DB_POOLER_URL`.
+3. Em **Project Settings → API**, copie a `Project URL` (→ `SUPABASE_URL`) e a
+   `service_role` key (→ `SUPABASE_SERVICE_ROLE_KEY`) — usada só pelo backend
+   para o upload de imagens.
+4. Em **Storage**, crie um bucket público chamado `rshoes-images`.
 
-Em `Storage → New bucket`, crie um bucket público chamado `tnzone-images`.
-Use limite de 8 MB e permita PNG, JPG, JPEG, WEBP e GIF.
+O schema (tabelas de produtos, categorias, admins, sessões, analytics) é
+criado sozinho na primeira requisição — não é preciso rodar nenhum SQL manual.
 
-Em `Project Settings → API`, configure `SUPABASE_URL` e a
-`SUPABASE_SERVICE_ROLE_KEY` nas variáveis privadas do Netlify. A service role
-key nunca deve ir para o frontend ou ser commitada no GitHub.
+## 2. Variáveis de ambiente (Netlify → Site settings → Environment variables)
 
-### 3. Configurar o site no Netlify
+| Variável | Para quê |
+|---|---|
+| `SUPABASE_DB_POOLER_URL` | conexão do backend com o Postgres |
+| `SUPABASE_URL` | URL do projeto Supabase (upload de imagens) |
+| `SUPABASE_SERVICE_ROLE_KEY` | chave de serviço do Supabase (upload de imagens) |
+| `ADMIN_EMAIL` | e-mail do administrador do painel |
+| `ADMIN_PASSWORD` | senha do administrador do painel |
 
-1. Suba este projeto num repositório Git (GitHub/GitLab/Bitbucket) e conecte
-   no Netlify (**Add new site → Import an existing project**), ou use
-   `netlify deploy` via CLI.
-2. Build settings já vêm do `netlify.toml` (publish = `public`, functions =
-   `netlify/functions`). Não precisa mudar nada no painel.
-3. Em **Site configuration → Environment variables**, adicione:
-   - `NODE_ENV=production`
-   - `SUPABASE_DB_POOLER_URL`, `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`
-   - `ADMIN_EMAIL` e `ADMIN_PASSWORD` (credenciais do primeiro admin — troque
-     a senha padrão!)
-4. Deploy. Na primeira requisição que acionar a function (`/api/...`), o
-   banco cria as tabelas automaticamente e o primeiro admin é criado a partir
-   de `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
+O admin é criado/atualizado automaticamente a partir de `ADMIN_EMAIL` /
+`ADMIN_PASSWORD` — não existe usuário nem senha padrão no código.
 
-### 4. Acessar
+## 3. Deploy
 
-- Site: `https://SEU-SITE.netlify.app`
-- Painel admin: `https://SEU-SITE.netlify.app/admin/login`
+1. Suba esta pasta para um repositório Git (GitHub/GitLab) ou arraste o
+   projeto direto no Netlify (Sites → "Add new site" → "Deploy manually").
+2. Configure as variáveis de ambiente acima.
+3. O `netlify.toml` já define o build (`npm install`), a pasta publicada
+   (`public`) e o redirecionamento de `/api/*` para a function.
 
-Depois do primeiro login, troque a senha pelo próprio painel
-(Configurações → Alterar senha) e remova `ADMIN_EMAIL`/`ADMIN_PASSWORD` das
-env vars do Netlify (elas só são lidas quando não existe nenhum admin ainda).
+Depois do deploy:
 
-## Rodando localmente (opcional, para testar antes do deploy)
+- Site: `https://SEU-SITE.netlify.app/`
+- Catálogo: `https://SEU-SITE.netlify.app/catalogo.html`
+- Painel admin: `https://SEU-SITE.netlify.app/admin/` (faça login com
+  `ADMIN_EMAIL` / `ADMIN_PASSWORD`)
 
-Requer Node 18+ e a CLI do Netlify (`npm install -g netlify-cli`).
+## 4. Cadastrando produtos
+
+No painel (`/admin/produtos.html`) você cadastra nome, preço, preço
+promocional, estoque, imagens e categorias (Low, High, Slip-on, Skate,
+Edição Limitada, Acessórios). Assim que um produto é salvo como ativo, ele
+aparece automaticamente:
+
+- na home, na seção "Latest Drops" (6 mais recentes);
+- na home, na seção de destaque, se marcado como **featured**;
+- no catálogo completo, já filtrável por categoria.
+
+Não há nenhum produto de exemplo no código — o site começa vazio até você
+cadastrar o primeiro produto pelo painel.
+
+## 5. Rodando localmente (opcional)
 
 ```bash
+npm install -g netlify-cli
 npm install
-cp .env.example .env   # preencha as variáveis privadas do Supabase e ADMIN_*
 netlify dev
 ```
 
-Isso sobe o site estático + a Function localmente em `http://localhost:8888`,
-já com o redirect `/api/*` funcionando como em produção.
+O `netlify dev` sobe o site e as functions juntos em `http://localhost:8888`,
+usando as mesmas variáveis de ambiente (pode criar um arquivo `.env` local).
 
-## Configurando o WhatsApp
+## 6. Pagamento real via PicPay + WhatsApp
 
-Em **Admin → Configurações**, informe o número no campo "Número de
-WhatsApp" apenas com dígitos, incluindo DDI e DDD (ex: `5561986553995`
-para +55 61 98655-3995). A mensagem é montada automaticamente com saudação
-conforme o horário e frase adaptada ao tipo do produto.
+O projeto agora possui checkout Pix real em `/checkout.html?produto=SLUG`.
 
-## Limitações conhecidas desta versão
+Fluxo:
 
-- **Rate limiting de login** é em memória por instância de function — em
-  cold start o contador zera. Para algo mais rígido, migre para uma tabela
-  dedicada no Postgres.
-- **Exclusão de imagens no Supabase Storage** é best-effort (não bloqueia a
-  operação se falhar) — pode deixar arquivos órfãos ocasionalmente.
-- **Tempo real** agora é polling (a cada 15s), não é instantâneo como o SSE
-  original — trade-off necessário em ambiente serverless.
-- O `data/` e `uploads/` da versão original não existem mais nesta versão
-  (substituídos por Supabase Postgres + Supabase Storage).
+1. O cliente escolhe o produto e a quantidade.
+2. Informa nome completo, CPF, e-mail, telefone, tamanho/cor e dados adicionais.
+3. O backend calcula o preço diretamente do produto no banco e cria uma cobrança Pix no PicPay.
+4. A página exibe o QR Code e o Pix Copia e Cola.
+5. O navegador apenas consulta o pedido; **não confirma pagamento por conta própria**.
+6. O PicPay chama `POST /api/payments/picpay/webhook`.
+7. O webhook valida o `Authorization` recebido do PicPay, marca o pedido como `PAID`, registra horário/transactionId, libera/baixa estoque conforme o fluxo e calcula a pontuação.
+8. Após o pagamento confirmado, o sistema envia automaticamente os dados do pedido para o WhatsApp configurado.
 
-## Segurança já implementada
+A API Pix do PicPay usa OAuth 2.0 `client_credentials`. As credenciais ficam somente no backend. O token de acesso é temporário; o backend faz cache/renovação automática. Consulte a documentação oficial do PicPay antes de colocar em produção:
+https://developers-business.picpay.com/pix/docs/authentication
 
-- Senhas com hash `scrypt` + salt individual (nunca texto puro)
-- Sessão via cookie `HttpOnly`, `SameSite=Lax`, `Secure` em produção
-- Token de sessão nunca fica gravado em texto puro no banco (só o hash)
-- Rate limiting de tentativas de login por IP (ver limitação acima)
-- Validação de tipo/tamanho em uploads de imagem
-- Todas as rotas administrativas exigem sessão válida checada no servidor
-- Log de ações administrativas (login, criação/edição/exclusão, moderação de
-  feedback, alteração de configurações)
-- Sanitização de saída (`escapeHtml`) em todo texto vindo do usuário antes de
-  ir para o HTML, evitando XSS
+### Variáveis de ambiente — PicPay
+
+Configure no Netlify:
+
+| Variável | Exemplo/descrição |
+|---|---|
+| `PICPAY_ENV` | `production` ou `sandbox` |
+| `PICPAY_CLIENT_ID` | client_id gerado no Painel Lojista |
+| `PICPAY_CLIENT_SECRET` | client_secret do PicPay |
+| `PICPAY_WEBHOOK_TOKEN` | token exibido pelo PicPay ao configurar a URL de notificação |
+| `PICPAY_CALLER_ORIGIN` | opcional, identificação da integração |
+| `PICPAY_PIX_EXPIRATION_SECONDS` | opcional; padrão `900` |
+| `PICPAY_COUNTRY_CODE` | opcional; padrão `55` |
+| `POINTS_PER_REAL` | opcional; padrão `1` ponto por R$ 1,00 |
+
+Produção usa `https://ecommerce-api.svcp.picpay.com`; homologação usa `https://ecommerce-api.svcp.ppay.me`.
+
+### URL do webhook no PicPay
+
+Depois do deploy, informe no Painel Lojista a URL:
+
+`https://SEU-DOMINIO/api/payments/picpay/webhook`
+
+A URL precisa ser HTTPS e o PicPay envia o token de autenticação no header `Authorization`. Não coloque query parameters nessa URL.
+
+### Variáveis de ambiente — WhatsApp
+
+O código usa um endpoint compatível com o formato de envio de texto da WhatsApp Cloud API/Meta:
+
+| Variável | Descrição |
+|---|---|
+| `WHATSAPP_API_URL` | URL completa do endpoint de envio de mensagens |
+| `WHATSAPP_TOKEN` | token Bearer da API |
+| `WHATSAPP_OWNER_PHONE` | número do dono que receberá a notificação, com DDI |
+
+A mensagem enviada contém: número do pedido, produto, quantidade, pontuação, valor, nome, CPF, e-mail, telefone, tamanho/cor, dados adicionais, status de pagamento, horário e identificador da cobrança PicPay.
+
+**Importante:** tokens, `client_secret` e credenciais não devem ser colocados em HTML/JavaScript público nem enviados para o navegador.
+
+### Teste antes de produção
+
+Recomenda-se configurar primeiro `PICPAY_ENV=sandbox`, testar criação da cobrança e o webhook, e só depois trocar para `production`.
+
+O PicPay documenta a API Pix, os estados de cobrança e o webhook no portal oficial:
+https://developers-business.picpay.com/pix/docs/introduction
+https://developers-business.picpay.com/pix/docs/webhook
+
+
+## Pagamentos PicPay — produção e idempotência
+
+O checkout usa a API Pix do PicPay no backend. O navegador nunca decide que um pagamento foi recebido.
+
+### Webhook
+
+Endpoint:
+
+`POST /api/payments/picpay/webhook`
+
+No Painel Lojista do PicPay, configure a URL HTTPS acima. O PicPay envia o token no header `Authorization` e o header `event_type` com `TransactionUpdateMessage`. O código valida os dois antes de processar o evento.
+
+O webhook também exige `type=PAYMENT`, `id` do evento e `data.merchantChargeId`. O pedido é localizado pelo `merchant_charge_id` e atualizado dentro de uma transação PostgreSQL com `SELECT ... FOR UPDATE`.
+
+### Proteções de produção
+
+- `payment_webhook_events.event_id UNIQUE` impede processar o mesmo evento duas vezes.
+- `orders.merchant_charge_id UNIQUE` garante uma cobrança externa por pedido.
+- `FOR UPDATE` serializa atualizações concorrentes do mesmo pedido.
+- `PAID` só é aceito quando o pagamento é PIX e o valor recebido em centavos coincide com o valor do pedido.
+- O estoque só é devolvido uma vez, enquanto `stock_reserved=1`.
+- A notificação de WhatsApp usa uma outbox (`payment_notifications`) com `UNIQUE(order_id, type)`, permitindo nova tentativa sem duplicar a notificação lógica.
+- O WhatsApp fica fora da transação de pagamento. Se o WhatsApp falhar, o pedido continua `PAID`.
+- Existe reconciliação automática a cada 10 minutos para pedidos `PENDING` com mais de 2 minutos, consultando diretamente `GET /charge/:merchantChargeId` no PicPay.
+- Também existe reconciliação manual para administrador:
+  `POST /api/admin/payments/picpay/reconcile/:merchantChargeId`
+
+### Variáveis obrigatórias
+
+```env
+PICPAY_ENV=production
+PICPAY_CLIENT_ID=
+PICPAY_CLIENT_SECRET=
+PICPAY_WEBHOOK_TOKEN=
+PICPAY_CALLER_ORIGIN=TN'zone
+PICPAY_PIX_EXPIRATION_SECONDS=900
+PICPAY_COUNTRY_CODE=55
+
+POINTS_PER_REAL=1
+
+WHATSAPP_API_URL=
+WHATSAPP_TOKEN=
+WHATSAPP_OWNER_PHONE=
+TZ=America/Fortaleza
+```
+
+Nunca coloque `PICPAY_CLIENT_SECRET`, `PICPAY_WEBHOOK_TOKEN` ou `WHATSAPP_TOKEN` no frontend.
+
+### Fluxo de confirmação
+
+```text
+Cliente
+  ↓
+Checkout
+  ↓
+Pedido PENDING + estoque reservado
+  ↓
+PicPay gera cobrança PIX
+  ↓
+Cliente paga
+  ↓
+PicPay → webhook
+  ↓
+valida Authorization + event_type + type + event id
+  ↓
+transação PostgreSQL + FOR UPDATE
+  ↓
+valida merchantChargeId + PIX + valor
+  ↓
+PENDING → PAID
+  ↓
+cria notificação WhatsApp PENDING
+  ↓
+COMMIT
+  ↓
+envia WhatsApp
+  ↓
+SENT
+```
+
+O PicPay documenta o webhook como uma notificação a cada mudança de status e também disponibiliza a consulta de uma charge pelo `merchantChargeId`, usada pelo reconciliador deste projeto.
+
+## Feedbacks de clientes
+
+- Seção "Quem comprou, aprovou" na home (entre os benefícios e o "Sobre"). O cliente envia foto ou vídeo com nome completo, produto e data da compra.
+- O arquivo vai direto do navegador para o Supabase Storage (URL assinada gerada em `POST /api/feedbacks/upload-url`), no bucket público `rshoes-feedbacks`, criado automaticamente no primeiro envio. Precisa de `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`.
+- Limites: foto até 8 MB, vídeo até 50 MB (o plano do Supabase também precisa permitir esse tamanho).
+- Todo envio entra como `pending`. A moderação fica em `/admin/feedbacks.html` (aprovar, rejeitar, excluir). No site aparece só "Nome S.", o nome completo fica apenas no painel.
+- A tabela `feedbacks` é criada sozinha no `db.init()`.

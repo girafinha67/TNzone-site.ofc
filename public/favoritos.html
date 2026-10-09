@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Favoritos | TN'zone</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff'/%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%230a0a0a' stroke-width='6'/%3E%3Ctext x='50' y='68' font-size='56' fill='%230a0a0a' text-anchor='middle' font-family='Arial' font-weight='bold'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+<style>.fav-empty{text-align:center;padding:100px 0}.fav-empty p{color:var(--mute);margin-bottom:22px}</style>
+</head>
+<body>
+
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="shoe" viewBox="0 0 200 100" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 78 C8 62 22 58 34 56 C50 53 58 44 66 34 C74 24 84 18 98 18 C110 18 116 24 122 30 C130 38 140 42 154 44 C170 46 186 52 190 66 C192 74 188 80 178 82 L20 82 C12 82 8 82 8 78 Z"/>
+  </symbol>
+</svg>
+
+<div class="topbar" id="topbar"><div class="topbar-track" id="topbarTrack"><span>TN'zone</span></div></div>
+
+<header class="site-header" id="siteHeader">
+  <div class="bar">
+    <a class="logo" href="/index.html"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></a>
+    <nav class="main">
+      <a href="/index.html">Home</a>
+      <a href="/catalogo.html">Loja</a>
+      <a href="/index.html#sobre">Sobre nós</a>
+    </nav>
+    <div class="h-actions">
+      <button class="icon-btn search-only" id="searchToggle" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      <a class="icon-btn" href="/favoritos.html" aria-label="Favoritos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2 5 5.4 5c2 0 3.4 1 4.6 2.6C11.2 6 12.6 5 14.6 5 18 5 19.6 8.4 18 11.7 15.5 16.4 12 21 12 21z"/></svg><span class="icon-badge" id="favBadge">0</span></a>
+      <button class="icon-btn" id="cartToggle" aria-label="Carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16l-1.5 12h-13z"/><path d="M8 7a4 4 0 0 1 8 0"/></svg><span class="icon-badge" id="cartBadge">0</span></button>
+      <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<nav class="mobile-menu" id="mobileMenu">
+  <button class="mm-close" id="mmClose" aria-label="Fechar menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <a href="/index.html">Home</a>
+  <a href="/catalogo.html">Loja</a>
+</nav>
+
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-panel">
+    <div class="search-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Buscar produtos, marcas…" autocomplete="off">
+      <button class="search-close" id="searchClose" aria-label="Fechar busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+
+<div class="drawer-scrim" id="cartScrim"></div>
+<aside class="drawer" id="cartDrawer" aria-label="Carrinho">
+  <div class="drawer-head"><h2>Carrinho</h2><button class="drawer-close" id="cartClose" aria-label="Fechar carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="drawer-body" id="cartDrawerBody"></div>
+  <div class="drawer-foot" id="cartDrawerFoot"></div>
+</aside>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<main>
+  <div class="wrap page-head">
+    <p class="crumbs"><a href="/index.html">Home</a> / Favoritos</p>
+    <h1>Seus favoritos</h1>
+  </div>
+  <div class="wrap" style="padding-bottom:100px">
+    <div class="products" id="favGrid"></div>
+    <div class="fav-empty" id="favEmpty" style="display:none">
+      <p>Você ainda não favoritou nenhum tênis.</p>
+      <a class="btn btn-dark" style="width:auto;display:inline-flex" href="/catalogo.html">VER A LOJA</a>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap f-top">
+    <div class="f-brand"><div class="logo"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></div><p>Tênis e streetwear escolhidos a dedo em São Luís, Maranhão.</p></div>
+    <div><h4>Loja</h4><ul><li><a href="/catalogo.html">Todos os produtos</a></li></ul></div>
+    <div><h4>Atendimento</h4><ul><li><a href="https://instagram.com/TNzone.ofc" target="_blank" rel="noopener">Fale conosco</a></li></ul></div>
+    <div><h4>Empresa</h4><ul><li><a href="/index.html#sobre">Sobre nós</a></li></ul></div>
+  </div>
+  <div class="wrap f-bottom"><span>© 2026 TN'zone. Todos os direitos reservados.</span><span>São Luís, MA</span></div>
+</footer>
+
+<script src="/js/mock-api.js"></script>
+<script src="/js/shop.js"></script>
+<script>
+(function(){
+  var ids = RSShop.getFavorites();
+  var grid = document.getElementById('favGrid');
+  var empty = document.getElementById('favEmpty');
+  if(!ids.length){ empty.style.display = 'block'; return; }
+
+  fetch('/api/products?ids=' + ids.join(','))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var list = (data && data.products) || [];
+      if(!list.length){ empty.style.display = 'block'; return; }
+      var byId = {}; list.forEach(function(p){ byId[p.id]=p; });
+      grid.innerHTML = list.map(RSShop.productCardHtml).join('');
+      RSShop.wireProductGrid(grid, byId);
+      // ao desfavoritar aqui, remove o card imediatamente da lista
+      grid.addEventListener('click', function(e){
+        var favBtn = e.target.closest('.pc-fav');
+        if(favBtn) setTimeout(function(){
+          if(!RSShop.isFavorite(favBtn.dataset.id)){
+            var card = favBtn.closest('.product-card');
+            if(card) card.remove();
+            if(!grid.children.length) empty.style.display = 'block';
+          }
+        }, 0);
+      });
+    })
+    .catch(function(){ empty.style.display = 'block'; });
+})();
+</script>
+</body>
+</html>

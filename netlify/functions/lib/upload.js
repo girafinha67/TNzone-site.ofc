@@ -2,8 +2,8 @@
 
 const crypto = require('node:crypto');
 
-const BUCKET = 'tnzone-images';
-const FOLDER = 'tnzone';
+const BUCKET = 'rshoes-images';
+const FOLDER = 'rshoes';
 const MAX_BYTES = 8 * 1024 * 1024;
 const ALLOWED = {
   'image/png': 'png',
@@ -105,8 +105,121 @@ async function deleteImage(urlOrPublicId) {
       },
     });
   } catch {
-    // Best-effort: uma falha de limpeza não impede excluir o produto.
+    // Falha de limpeza não impede excluir o produto.
   }
 }
 
-module.exports = { saveBase64Image, deleteImage };
+
+// ===================== Feedbacks (foto/vídeo enviados por clientes) =====================
+// O arquivo NÃO passa pela function (limite de ~6MB do Netlify): o servidor só
+// gera uma URL assinada e o navegador envia direto para o Supabase Storage.
+const FEEDBACK_BUCKET = 'rshoes-feedbacks';
+const FEEDBACK_IMAGE_MAX = 8 * 1024 * 1024;
+const FEEDBACK_VIDEO_MAX = 50 * 1024 * 1024;
+const FEEDBACK_ALLOWED = {
+  'image/png': { ext: 'png', kind: 'image' },
+  'image/jpeg': { ext: 'jpg', kind: 'image' },
+  'image/webp': { ext: 'webp', kind: 'image' },
+  'image/gif': { ext: 'gif', kind: 'image' },
+  'video/mp4': { ext: 'mp4', kind: 'video' },
+  'video/quicktime': { ext: 'mov', kind: 'video' },
+  'video/webm': { ext: 'webm', kind: 'video' },
+};
+let feedbackBucketReady = false;
+
+function feedbackPublicPrefix() {
+  const { url } = supabaseConfig();
+  return `${url}/storage/v1/object/public/${FEEDBACK_BUCKET}/`;
+}
+
+async function ensureFeedbackBucket() {
+  if (feedbackBucketReady) return;
+  const { url, key } = supabaseConfig();
+  const res = await fetch(`${url}/storage/v1/bucket`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, apikey: key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: FEEDBACK_BUCKET,
+      name: FEEDBACK_BUCKET,
+      public: true,
+      file_size_limit: FEEDBACK_VIDEO_MAX,
+      allowed_mime_types: Object.keys(FEEDBACK_ALLOWED),
+    }),
+  });
+  // 200 = criado; 400/409 = já existe. Qualquer outro erro é problema de configuração.
+  if (!res.ok && res.status !== 400 && res.status !== 409) {
+    const body = await res.text();
+    const err = new Error(`Não foi possível preparar o armazenamento dos feedbacks: ${body.slice(0, 200)}`);
+    err.status = 502;
+    throw err;
+  }
+  feedbackBucketReady = true;
+}
+
+// Valida tipo/tamanho e devolve { signedUrl, publicUrl, kind }.
+async function createFeedbackSignedUpload(mime, size) {
+  const info = FEEDBACK_ALLOWED[String(mime || '').toLowerCase()];
+  if (!info) {
+    const err = new Error('Formato não permitido. Envie foto (JPG, PNG, WEBP, GIF) ou vídeo (MP4, MOV, WEBM).');
+    err.status = 400;
+    throw err;
+  }
+  const bytes = Number(size) || 0;
+  const max = info.kind === 'video' ? FEEDBACK_VIDEO_MAX : FEEDBACK_IMAGE_MAX;
+  if (bytes <= 0 || bytes > max) {
+    const err = new Error(info.kind === 'video' ? 'O vídeo pode ter no máximo 50 MB.' : 'A foto pode ter no máximo 8 MB.');
+    err.status = 400;
+    throw err;
+  }
+
+  await ensureFeedbackBucket();
+  const { url, key } = supabaseConfig();
+  const objectPath = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${info.ext}`;
+  const encoded = objectPath.split('/').map(encodeURIComponent).join('/');
+  const res = await fetch(`${url}/storage/v1/object/upload/sign/${FEEDBACK_BUCKET}/${encoded}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, apikey: key, 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    const err = new Error(`Falha ao liberar o envio: ${body.slice(0, 200)}`);
+    err.status = 502;
+    throw err;
+  }
+  const data = await res.json();
+  let signed = String(data.url || '');
+  if (signed.startsWith('/object/')) signed = `${url}/storage/v1${signed}`;
+  else if (signed.startsWith('/storage/')) signed = `${url}${signed}`;
+  if (!signed.startsWith('http')) {
+    const err = new Error('Resposta inesperada do armazenamento.');
+    err.status = 502;
+    throw err;
+  }
+  return { signedUrl: signed, publicUrl: `${feedbackPublicPrefix()}${encoded}`, kind: info.kind };
+}
+
+// Best-effort, igual deleteImage.
+async function deleteFeedbackMedia(publicUrl) {
+  try {
+    const prefix = feedbackPublicPrefix();
+    const raw = String(publicUrl || '');
+    if (!raw.startsWith(prefix)) return;
+    const { url, key } = supabaseConfig();
+    await fetch(`${url}/storage/v1/object/${FEEDBACK_BUCKET}/${raw.slice(prefix.length)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${key}`, apikey: key },
+    });
+  } catch {
+    // Falha de limpeza não impede excluir o feedback.
+  }
+}
+
+module.exports = {
+  BUCKET,
+  saveBase64Image,
+  deleteImage,
+  feedbackPublicPrefix,
+  createFeedbackSignedUpload,
+  deleteFeedbackMedia,
+};

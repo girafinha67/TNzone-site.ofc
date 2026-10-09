@@ -3,96 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Feedbacks — Admin TN Zone</title>
-<meta name="robots" content="noindex">
-<link rel="stylesheet" href="/css/style.css">
-<link rel="stylesheet" href="/css/admin.css">
+<title>Feedbacks | Painel TN'zone</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext x='50' y='68' font-size='60' fill='white' text-anchor='middle' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../css/catalogo.css">
 </head>
-<body>
+<body class="admin-body">
 
 <div class="admin-shell">
-  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+  <aside class="admin-sidebar">
+    <div class="admin-logo">
+      <span>TN'zone <em style="color:var(--gold-bright); font-style:normal;">Admin</em></span>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html">Dashboard</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="categorias.html">Categorias</a>
+      <a href="feedbacks.html" class="active">Feedbacks</a>
+      <a href="analytics.html">Análise de usuários</a>
+      <a href="conteudo.html">Conteúdo da Home</a>
+      <a href="#" id="logoutBtn">Sair</a>
+    </nav>
+  </aside>
+
   <main class="admin-main">
     <div class="admin-topbar">
-      <div>
-        <h1>Feedbacks</h1>
-        <div class="sub">Modere as avaliações antes que apareçam no site.</div>
+      <h1>Feedbacks de clientes</h1>
+      <span class="admin-email" id="adminEmail"></span>
+    </div>
+
+    <div class="admin-toolbar" id="fbTabs">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-gold" data-status="pending">Pendentes <span id="cnt-pending"></span></button>
+        <button type="button" class="btn btn-ghost" data-status="approved">Aprovados <span id="cnt-approved"></span></button>
+        <button type="button" class="btn btn-ghost" data-status="rejected">Rejeitados <span id="cnt-rejected"></span></button>
+        <button type="button" class="btn btn-ghost" data-status="">Todos</button>
       </div>
     </div>
 
-    <div class="filters-bar glass" style="padding:10px 14px;width:fit-content;">
-      <select id="status-filter">
-        <option value="pending">Pendentes</option>
-        <option value="approved">Aprovados</option>
-        <option value="rejected">Reprovados</option>
-        <option value="">Todos</option>
-      </select>
-    </div>
-
-    <div class="panel glass">
+    <div class="admin-table-wrap">
       <table class="admin-table">
-        <thead><tr><th>Nome</th><th>Nota</th><th>Comentário</th><th>Produto</th><th>Status</th><th></th></tr></thead>
-        <tbody id="fb-tbody"><tr><td colspan="6">Carregando...</td></tr></tbody>
+        <thead><tr><th>Mídia</th><th>Nome completo</th><th>Produto</th><th>Data da compra</th><th>Enviado em</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="fbBody"><tr><td colspan="7">Carregando...</td></tr></tbody>
       </table>
     </div>
   </main>
 </div>
 
-<script src="/js/api.js"></script>
-<script src="/js/admin/admin-shell.js"></script>
-<script>
-async function load() {
-  const admin = await initAdminPage('/admin/feedbacks');
-  if (!admin) return;
-  document.getElementById('status-filter').addEventListener('change', loadFeedbacks);
-  loadFeedbacks();
-}
-
-async function loadFeedbacks() {
-  const status = document.getElementById('status-filter').value;
-  const { feedbacks } = await API.get(`/api/admin/feedbacks${status ? `?status=${status}` : ''}`);
-  const tbody = document.getElementById('fb-tbody');
-  if (!feedbacks.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-faint);">Nenhum feedback aqui.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = feedbacks.map(f => `
-    <tr>
-      <td>${escapeHtml(f.name)}</td>
-      <td>${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}</td>
-      <td style="max-width:280px;">${escapeHtml(f.comment || '—')}</td>
-      <td>${f.product_name ? escapeHtml(f.product_name) : '—'}</td>
-      <td><span class="pill ${f.status}">${{ pending: 'Pendente', approved: 'Aprovado', rejected: 'Reprovado' }[f.status]}</span></td>
-      <td>
-        <div class="row-actions">
-          ${f.status !== 'approved' ? `<button class="icon-btn" title="Aprovar" onclick="setStatus(${f.id}, 'approved')">✓</button>` : ''}
-          ${f.status !== 'rejected' ? `<button class="icon-btn" title="Reprovar" onclick="setStatus(${f.id}, 'rejected')">✕</button>` : ''}
-          <button class="icon-btn danger" title="Excluir" onclick="removeFeedback(${f.id})">🗑</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-}
-
-async function setStatus(id, status) {
-  try {
-    await API.patch(`/api/admin/feedbacks/${id}`, { status });
-    toast('Feedback atualizado.');
-    loadFeedbacks();
-  } catch (err) { toast(err.message, 'error'); }
-}
-
-async function removeFeedback(id) {
-  const ok = await adminConfirm('Excluir este feedback? Esta ação não pode ser desfeita.', { title: 'Excluir feedback', confirmLabel: 'Excluir' });
-  if (!ok) return;
-  try {
-    await API.del(`/api/admin/feedbacks/${id}`);
-    toast('Feedback excluído.');
-    loadFeedbacks();
-  } catch (err) { toast(err.message, 'error'); }
-}
-
-load();
-</script>
+<script src="../js/api.js"></script>
+<script src="../js/admin-common.js"></script>
+<script src="../js/admin-feedbacks.js"></script>
 </body>
 </html>

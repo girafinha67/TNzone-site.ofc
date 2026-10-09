@@ -1,7 +1,7 @@
 {
-  "name": "tn-zone",
-  "version": "2.0.0",
-  "description": "Loja virtual TN Zone — catálogo de tênis e streetwear com painel administrativo. Versão para Netlify (Functions + Postgres/Supabase).",
+  "name": "rshoes-store",
+  "version": "1.0.0",
+  "description": "TN'zone — landing page + catálogo de tênis com painel administrativo. Netlify (Functions + Postgres/Supabase).",
   "private": true,
   "license": "UNLICENSED",
   "engines": {

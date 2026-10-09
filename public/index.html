@@ -2,287 +2,456 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TNzone — Tênis, camisas e calças selecionados</title>
-<meta name="description" content="Catálogo de tênis, camisas e calças com curadoria própria. Compre direto pelo WhatsApp.">
-<meta property="og:title" content="TNzone">
-<meta property="og:description" content="Tênis, camisas e calças selecionados — feche seu pedido direto pelo WhatsApp.">
-<link rel="icon" href="/img/favicon.png">
-<link rel="apple-touch-icon" href="/img/apple-touch-icon.jpg">
-<meta property="og:image" content="/img/og.jpg">
-<link rel="stylesheet" href="/css/style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TN'zone | Tênis e Streetwear em São Luís</title>
+<meta name="description" content="TN'zone: tênis escolhidos a dedo em São Luís, Maranhão. Dá uma olhada na nossa coleção.">
+<meta property="og:title" content="TN'zone | Tênis e Streetwear em São Luís">
+<meta property="og:description" content="Tênis escolhidos a dedo em São Luís, Maranhão.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff'/%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%230a0a0a' stroke-width='6'/%3E%3Ctext x='50' y='68' font-size='56' fill='%230a0a0a' text-anchor='middle' font-family='Arial' font-weight='bold'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+.manifesto{background:var(--ink);color:#fff}
+.manifesto .grid{display:grid;grid-template-columns:1fr;gap:32px}
+.manifesto h2{font-size:clamp(2.2rem,6vw,4.4rem);text-transform:uppercase}
+.manifesto p{max-width:420px;font-size:1rem;color:var(--mute-dark);margin-top:6px}
+@media(min-width:860px){.manifesto .grid{grid-template-columns:1.4fr 1fr;align-items:end}.manifesto p{margin-top:0}}
+</style>
 </head>
 <body>
 
-<div id="site-header"></div>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="shoe" viewBox="0 0 200 100" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 78 C8 62 22 58 34 56 C50 53 58 44 66 34 C74 24 84 18 98 18 C110 18 116 24 122 30 C130 38 140 42 154 44 C170 46 186 52 190 66 C192 74 188 80 178 82 L20 82 C12 82 8 82 8 78 Z"/>
+    <path d="M34 56 C42 62 56 66 76 66 C104 66 128 60 146 50"/>
+    <path d="M66 34 L78 52 M84 27 L94 50 M100 21 L108 52"/>
+    <path d="M8 78 L190 78" stroke-width="1.2" opacity=".5"/>
+  </symbol>
+</svg>
 
-<div id="home-sections-root">
+<div class="topbar" id="topbar"><div class="topbar-track" id="topbarTrack"><span>Carregando…</span></div></div>
 
-<div data-section-key="banner">
-<section class="hero">
-  <div class="hero-bg" id="hero-bg" style="background-image:url('/img/logo-art.jpg'); background-position:center 25%;"></div>
-  <div class="hero-scrim"></div>
-  <div class="hero-content">
-    <div class="eyebrow" id="store-status-badge"><span class="status-dot closed" id="store-status-dot"></span><span id="store-status-text">Loja nova · fundada em 08/08/2026</span></div>
-    <h1 id="hero-title">Preço justo. Qualidade <span class="accent">impecável</span>.</h1>
-    <p id="hero-subtitle">Tênis, camisas e calças selecionados par por par — leve no varejo ou monte sua grade no atacado, e feche direto no WhatsApp.</p>
-    <div class="hero-actions">
-      <a href="#" id="hero-whatsapp-link" target="_blank" rel="noopener" class="btn btn-primary">Ver disponibilidade</a>
-      <a href="/catalogo" class="btn btn-ghost">Ver catálogo completo</a>
+<header class="site-header" id="siteHeader">
+  <div class="bar">
+    <a class="logo" href="/index.html"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></a>
+    <nav class="main">
+      <a class="active" href="/index.html">Home</a>
+      <a href="/catalogo.html">Loja</a>
+      <a href="/index.html#sobre">Sobre nós</a>
+    </nav>
+    <div class="h-actions">
+      <button class="icon-btn search-only" id="searchToggle" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      <a class="icon-btn" href="/favoritos.html" aria-label="Favoritos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2 5 5.4 5c2 0 3.4 1 4.6 2.6C11.2 6 12.6 5 14.6 5 18 5 19.6 8.4 18 11.7 15.5 16.4 12 21 12 21z"/></svg><span class="icon-badge" id="favBadge">0</span></a>
+      <button class="icon-btn" id="cartToggle" aria-label="Carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16l-1.5 12h-13z"/><path d="M8 7a4 4 0 0 1 8 0"/></svg><span class="icon-badge" id="cartBadge">0</span></button>
+      <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<nav class="mobile-menu" id="mobileMenu">
+  <button class="mm-close" id="mmClose" aria-label="Fechar menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <a href="/index.html">Home</a>
+  <a href="/catalogo.html">Loja</a>
+  <a href="/favoritos.html">Favoritos</a>
+  <a href="/index.html#sobre">Sobre nós</a>
+</nav>
+
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-panel">
+    <div class="search-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="Buscar produtos, marcas…" autocomplete="off">
+      <button class="search-close" id="searchClose" aria-label="Fechar busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+
+<div class="drawer-scrim" id="cartScrim"></div>
+<aside class="drawer" id="cartDrawer" aria-label="Carrinho">
+  <div class="drawer-head"><h2>Carrinho</h2><button class="drawer-close" id="cartClose" aria-label="Fechar carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="drawer-body" id="cartDrawerBody"></div>
+  <div class="drawer-foot" id="cartDrawerFoot"></div>
+</aside>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<section class="hero" id="hero">
+  <div class="hero-carousel" id="heroCarousel"></div>
+</section>
+
+<div class="brands" id="brandsWrap" style="display:none">
+  <div class="wrap">
+    <p class="eyebrow" style="margin-bottom:16px">PRINCIPAIS MARCAS</p>
+  </div>
+  <div class="brands-row"><div class="brands-track" id="brandsTrack"></div></div>
+</div>
+
+<section class="section" id="categorias">
+  <div class="wrap">
+    <div class="sec-head reveal"><h2>Compre por categoria</h2></div>
+    <div class="cat-carousel-wrap">
+      <button class="cat-nav cat-prev" id="catPrev" aria-label="Categoria anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <div class="cat-carousel" id="catGrid">
+        <p style="color:var(--mute)">Carregando categorias…</p>
+      </div>
+      <button class="cat-nav cat-next" id="catNext" aria-label="Próxima categoria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
   </div>
 </section>
 
-<div class="marquee-strip">
-  <div class="marquee-track">
-    <span>Pares conferidos ★</span><span>Grade a partir de 2 pares ★</span><span>Varejo a partir de 1 par ★</span><span>Compra direto pelo WhatsApp ★</span><span>Curadoria própria ★</span>
-    <span>Pares conferidos ★</span><span>Grade a partir de 2 pares ★</span><span>Varejo a partir de 1 par ★</span><span>Compra direto pelo WhatsApp ★</span><span>Curadoria própria ★</span>
+<section class="manifesto section reveal">
+  <div class="wrap grid">
+    <h2>Mais que<br>um tênis.<br>É o seu estilo.</h2>
+    <p>A TN'zone nasceu da cultura de rua, onde o que você calça mostra quem você é. A gente escolhe cada par pensando nisso: sem exagero, só estilo e atitude.</p>
+  </div>
+</section>
+
+<section class="section" id="destaques">
+  <div class="wrap">
+    <div class="sec-head reveal"><h2>Mais vendidos</h2><a class="sec-link" href="/catalogo.html">VER TUDO →</a></div>
+    <div class="products" id="productGrid"></div>
+  </div>
+</section>
+
+<section class="promo-banner" id="promoBanner" style="display:none">
+  <div class="pb-bg" id="promoBg"></div>
+  <div class="wrap">
+    <p class="pb-eyebrow" id="promoEyebrow"></p>
+    <h2 id="promoTitle"></h2>
+    <p id="promoSubtitle"></p>
+    <a class="btn btn-outline" id="promoCta"></a>
+  </div>
+</section>
+
+<section class="section" style="padding-top:56px;padding-bottom:56px">
+  <div class="wrap">
+    <div class="benefits" id="benefitsGrid"></div>
+  </div>
+</section>
+
+<section class="feedbacks section" id="feedbacks">
+  <div class="wrap reveal">
+    <p class="eyebrow">NOSSOS CLIENTES</p>
+    <h2>Quem comprou,<br>aprovou</h2>
+    <p class="fb-sub">Fotos e vídeos de clientes recebendo os pedidos.</p>
+  </div>
+  <div class="fb-track" id="fbTrack" tabindex="0" aria-label="Feedbacks de clientes"></div>
+  <p class="fb-hint" id="fbHint" hidden>← arraste para o lado para ver mais →</p>
+  <div class="wrap fb-cta">
+    <button type="button" class="btn fb-add" id="fbOpen">ADICIONAR FEEDBACK</button>
+  </div>
+</section>
+
+<div class="fb-modal" id="fbModal" hidden>
+  <div class="fb-backdrop" data-fb-close></div>
+  <div class="fb-dialog" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
+    <button type="button" class="fb-x" data-fb-close aria-label="Fechar">✕</button>
+    <div id="fbFormView">
+      <h3 id="fbTitle">Adicionar feedback</h3>
+      <p class="fb-note">Mande uma foto ou vídeo do seu pedido. Ele aparece no site depois que a gente aprovar.</p>
+      <form id="fbForm" novalidate>
+        <label class="fb-field"><span>Nome completo</span>
+          <input type="text" id="fbName" autocomplete="name" maxlength="120" placeholder="Seu nome e sobrenome" required></label>
+        <label class="fb-field"><span>Produto que você comprou</span>
+          <input type="text" id="fbProduct" maxlength="120" placeholder="Ex: Nike Dunk Low" required></label>
+        <label class="fb-field"><span>Data da compra</span>
+          <input type="date" id="fbDate" required></label>
+        <div class="fb-field"><span>Foto ou vídeo</span>
+          <label class="fb-file" for="fbFile" id="fbFileLabel">
+            <span id="fbFileText">Toque para escolher (foto até 8 MB, vídeo até 50 MB)</span>
+          </label>
+          <input type="file" id="fbFile" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm" hidden>
+          <div class="fb-preview" id="fbPreview" hidden></div>
+        </div>
+        <div class="fb-progress" id="fbProgress" hidden><i id="fbBar"></i></div>
+        <p class="fb-error" id="fbError" role="alert" hidden></p>
+        <button type="submit" class="btn fb-submit" id="fbSubmit">ENVIAR FEEDBACK</button>
+      </form>
+    </div>
+    <div id="fbDoneView" hidden>
+      <h3>Valeu pelo feedback! ❤️</h3>
+      <p class="fb-note">Recebemos o seu envio. Assim que a gente aprovar, ele aparece aqui no site.</p>
+      <button type="button" class="btn fb-submit" data-fb-close>FECHAR</button>
+    </div>
   </div>
 </div>
-</div>
 
-<div data-section-key="categorias" class="container">
-  <section class="section" id="categorias-section">
-    <div class="section-head">
-      <h2>Categorias</h2>
+<section class="section" id="sobre">
+  <div class="wrap reveal" style="max-width:760px">
+    <p class="eyebrow" style="margin-bottom:14px">SOBRE A TN'ZONE</p>
+    <h2 style="font-size:clamp(1.8rem,5vw,2.8rem);text-transform:uppercase;margin-bottom:18px">Feita pra quem é de São Luís</h2>
+    <p style="color:var(--mute);font-size:1.05rem">A TN'zone é uma loja de tênis em São Luís, no Maranhão. Aqui o tênis é mais que calçado: é o jeito de mostrar o seu estilo.</p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap f-top">
+    <div class="f-brand">
+      <div class="logo"><img class="logo-img" src="/assets/logo.png" alt="TN'zone"></div>
+      <p>Tênis e streetwear escolhidos a dedo em São Luís, Maranhão.</p>
     </div>
-    <div class="category-row glass" style="background:none;border:none;box-shadow:none;padding:0;" id="category-row">
-      <div class="skeleton" style="width:160px;height:110px;"></div>
-      <div class="skeleton" style="width:160px;height:110px;"></div>
-      <div class="skeleton" style="width:160px;height:110px;"></div>
+    <div>
+      <h4>Loja</h4>
+      <ul>
+        <li><a href="/catalogo.html">Todos os produtos</a></li>
+        <li><a href="/favoritos.html">Favoritos</a></li>
+      </ul>
     </div>
-  </section>
-</div>
-
-<div data-section-key="destaques" class="container">
-  <section class="section" id="destaques-section">
-    <div class="section-head">
-      <div>
-        <h2>Em destaque</h2>
-        <div class="sub">Seleção da casa, atualizada com frequência.</div>
-      </div>
-      <a href="/catalogo?featured=1" class="see-all">Ver todos →</a>
+    <div>
+      <h4>Atendimento</h4>
+      <ul>
+        <li><a href="https://instagram.com/TNzone.ofc" target="_blank" rel="noopener">Fale conosco</a></li>
+        <li><a href="/index.html#sobre">Entrega e trocas</a></li>
+        <li><a href="/carrinho.html">Meu carrinho</a></li>
+      </ul>
     </div>
-    <div class="product-grid" id="featured-grid"></div>
-  </section>
-</div>
-
-<div data-section-key="novidades" class="container">
-  <section class="section" id="novidades-section">
-    <div class="section-head">
-      <div>
-        <h2>Novidades</h2>
-        <div class="sub">Os últimos produtos que chegaram.</div>
-      </div>
-      <a href="/catalogo" class="see-all">Ver catálogo →</a>
+    <div>
+      <h4>Empresa</h4>
+      <ul>
+        <li><a href="/index.html#sobre">Sobre nós</a></li>
+        <li><a href="https://instagram.com/TNzone.ofc" target="_blank" rel="noopener">Instagram</a></li>
+      </ul>
     </div>
-    <div class="product-grid" id="new-grid"></div>
-  </section>
-</div>
-
-<div data-section-key="feedbacks" class="container">
-  <section class="section" id="feedbacks-section">
-    <div class="section-head">
-      <div>
-        <h2>O que dizem nossos clientes</h2>
-      </div>
-      <a href="/feedbacks" class="see-all">Deixar avaliação →</a>
+    <div class="f-newsletter">
+      <h4>Newsletter</h4>
+      <p>Novidades, lançamentos e promoções direto no seu e-mail.</p>
+      <form id="newsForm" class="f-news-form">
+        <input type="email" id="newsEmail" placeholder="Seu e-mail" required>
+        <button type="submit">ASSINAR</button>
+      </form>
+      <p class="f-news-msg" id="newsMsg">Pronto, você já está na lista!</p>
     </div>
-    <div class="product-grid" id="reviews-grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));"></div>
-  </section>
-</div>
+  </div>
+  <div class="wrap f-bottom">
+    <span>© 2026 TN'zone. Todos os direitos reservados.</span>
+    <span>São Luís, MA</span>
+  </div>
+</footer>
 
-</div><!-- /#home-sections-root -->
-
-<div class="container">
-
-  <section class="section" id="como-comprar">
-    <div class="section-head">
-      <div>
-        <h2>Como comprar</h2>
-        <div class="sub">Do print ao par na sua mão, sem complicação.</div>
-      </div>
-    </div>
-    <div class="steps-grid">
-      <div class="step-card glass">
-        <span class="num">01</span>
-        <h3>Escolha o par</h3>
-        <p>Navegue pelo catálogo completo aqui no site — filtre por tipo, tamanho e preço até achar o modelo certo.</p>
-      </div>
-      <div class="step-card glass">
-        <span class="num">02</span>
-        <h3>Chama no WhatsApp</h3>
-        <p>Clique em "Comprar pelo WhatsApp" no produto e continue a conversa direto com a gente. Sem robô, sem enrolação.</p>
-      </div>
-      <div class="step-card glass">
-        <span class="num">03</span>
-        <h3>Confirma tudo</h3>
-        <p>Tamanho disponível, foto real do par e o valor certinho antes de fechar.</p>
-      </div>
-      <div class="step-card glass">
-        <span class="num">04</span>
-        <h3>Combina a entrega</h3>
-        <p>Alinhamos juntos a melhor forma de retirada ou envio, direto na conversa.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="sobre-teaser">
-    <div class="about-teaser">
-      <div class="about-art">
-        <img src="/img/logo-art.jpg" alt="Arte da marca TNzone" loading="lazy">
-      </div>
-      <div class="about-copy">
-        <div class="eyebrow">Quem somos</div>
-        <div class="founding-date"><span class="dot"></span>Fundada em 08 de agosto de 2026</div>
-        <h2>Uma loja nova, tocada por dois amigos e um sonho.</h2>
-        <p>A TNzone começou do jeito mais simples possível: dois amigos que sempre curtiram tênis e moda de rua decidiram transformar isso em algo real. Sem grande estrutura, sem atalho — só vontade de fazer certo e entregar peças que a gente mesmo usaria.</p>
-        <p>Estamos começando agora, e cada venda é feita com atenção de perto, conversando direto com você.</p>
-        <a href="/sobre" class="btn btn-ghost">Conheça nossa história →</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="whatsapp-cta-section">
-    <div class="insta-cta">
-      <div class="icon">💬</div>
-      <h2>Compre direto pelo WhatsApp</h2>
-      <p>Chame a gente no WhatsApp para ver as grades novas e fechar seu pedido na hora.</p>
-      <a href="#" id="whatsapp-cta-link" target="_blank" rel="noopener" class="btn btn-white">Chamar no WhatsApp</a>
-    </div>
-  </section>
-
-  <section class="section" id="insta-cta-section">
-    <div class="insta-cta">
-      <div class="icon">📷</div>
-      <h2>Acompanhe os bastidores no Instagram</h2>
-      <p>Siga <span id="insta-handle-text">@TNzone.ofc</span> para ver os bastidores e as novidades assim que chegam.</p>
-      <a href="#" id="insta-cta-link" target="_blank" rel="noopener" class="btn btn-white">Seguir no Instagram</a>
-    </div>
-  </section>
-
-</div>
-
-<div id="site-footer"></div>
-
-<script src="/js/api.js"></script>
-<script src="/js/layout.js"></script>
-<script src="/js/product-card.js"></script>
-<script src="/js/store-status.js"></script>
+<script src="/js/mock-api.js"></script>
+<script src="/js/shop.js"></script>
+<script src="/js/feedbacks.js"></script>
 <script>
-const DEFAULT_HOME_ORDER = ['banner', 'categorias', 'destaques', 'novidades', 'feedbacks'];
+(function(){
+  // ---- Conteúdo real de fallback, embutido na própria página. ----
+  // A home NUNCA fica em branco esperando banco de dados: renderizamos
+  // este conteúdo de imediato, e só substituímos por dados vindos da API
+  // (banco/admin) se ela responder de forma válida a tempo. Se a API não
+  // responder, estiver fora do ar, ou o banco não estiver configurado, o
+  // que já está na tela permanece — nunca gera "Categorias em breve." nem
+  // seções vazias.
+  var FALLBACK_HOME_CONTENT = {
+    topbar: [
+      'FRETE GRÁTIS EM PEDIDOS ACIMA DE R$ 499',
+      'PAGOU NO PIX, SEU PEDIDO SAI PRIMEIRO',
+    ],
+    hero: [
+      { image: '/assets/hero/vans-old-skool.jpg', link: '/catalogo.html?brand=Vans' },
+      { image: '/assets/hero/adidas-samba.jpg', link: '/catalogo.html?brand=Adidas' },
+      { image: '/assets/hero/nike-dunk-low.jpg', link: '/catalogo.html?brand=Nike' },
+    ],
+    benefits: [
+      { icon: '🚚', title: 'Frete grátis', text: 'Em pedidos acima de R$ 499.' },
+      { icon: '↩️', title: 'Troca fácil', text: 'Até 7 dias depois que você receber.' },
+      { icon: '🔒', title: 'Pagamento seguro', text: 'Pix seguro, pelo PicPay.' },
+      { icon: '🎧', title: 'Atendimento', text: 'Fale com a gente direto no WhatsApp.' },
+    ],
+    promoBanner: {
+      active: true,
+      eyebrow: 'POR TEMPO LIMITADO',
+      title: 'Promoção rolando agora',
+      subtitle: 'Até 40% de desconto em vários modelos.',
+      ctaLabel: 'VER OFERTAS',
+      ctaLink: '/catalogo.html',
+    },
+  };
+  var FALLBACK_CATEGORIES = [
+    { name: 'Nike', slug: 'nike', image: '/assets/categories/nike.jpg' },
+    { name: 'Adidas', slug: 'adidas', image: '/assets/categories/adidas.jpg' },
+    { name: 'New Balance', slug: 'new-balance', image: '/assets/categories/new-balance.jpg' },
+    { name: 'Infantis', slug: 'infantis', image: '/assets/categories/infantis.jpg' },
+    { name: 'Linha premium', slug: 'linha-premium', image: '/assets/categories/linha-premium.jpg' },
+    { name: 'Vans', slug: 'vans', image: '/assets/categories/vans.jpg' },
+  ];
 
-// Reordena os blocos configuráveis da home (dentro de #home-sections-root)
-// de acordo com settings.home_sections_order, salvo pelo admin em
-// /admin/pagina-inicial. Cada bloco é um <div data-section-key="...">, então
-// mover o wrapper inteiro preserva o CSS (o banner continua full-width, os
-// outros continuam dentro de .container) independente da ordem escolhida.
-function applyHomeSectionsOrder(rawOrder) {
-  const root = document.getElementById('home-sections-root');
-  if (!root) return;
-  let order = DEFAULT_HOME_ORDER;
-  try {
-    const parsed = typeof rawOrder === 'string' ? JSON.parse(rawOrder) : rawOrder;
-    if (Array.isArray(parsed) && DEFAULT_HOME_ORDER.every((k) => parsed.includes(k))) order = parsed;
-  } catch { /* usa a ordem padrão */ }
-
-  order.forEach((key) => {
-    const el = root.querySelector(`[data-section-key="${CSS.escape(key)}"]`);
-    if (el) root.appendChild(el);
-  });
-}
-
-async function loadHome() {
-  renderLayout('home');
-
-  // Link padrão do WhatsApp (sobrescrito abaixo com o número das configurações, se houver)
-  const defaultWaMsg = encodeURIComponent('Olá! Vim pelo site da TNzone e queria saber mais sobre os produtos.');
-  const defaultWaLink = `https://wa.me/5561986553995?text=${defaultWaMsg}`;
-  document.getElementById('whatsapp-cta-link').href = defaultWaLink;
-  document.getElementById('hero-whatsapp-link').href = defaultWaLink;
-
-  // Link padrão do Instagram (sobrescrito abaixo com o handle das configurações,
-  // se houver) — garante que o botão sempre redirecione, mesmo se a API falhar.
-  document.getElementById('insta-cta-link').href = 'https://instagram.com/TNzone.ofc';
-  document.getElementById('insta-handle-text').textContent = '@TNzone.ofc';
-
-  try {
-    const { settings } = await API.get('/api/settings');
-    if (settings.banner_title) document.getElementById('hero-title').textContent = settings.banner_title;
-    if (settings.banner_subtitle) document.getElementById('hero-subtitle').textContent = settings.banner_subtitle;
-    if (settings.banner_image) document.getElementById('hero-bg').style.backgroundImage = `url('${settings.banner_image}')`;
-    document.title = `${settings.store_name || 'TNzone'} — ${settings.tagline || 'Streetwear e sneakers selecionados'}`;
-
-    applyHomeSectionsOrder(settings.home_sections_order);
-
-    const waNumber = settings.whatsapp_number || '5561986553995';
-    const waMsg = encodeURIComponent('Olá! Vim pelo site da TNzone e queria saber mais sobre os produtos.');
-    const waLink = `https://wa.me/${waNumber}?text=${waMsg}`;
-    document.getElementById('whatsapp-cta-link').href = waLink;
-    document.getElementById('hero-whatsapp-link').href = waLink;
-
-    const igHandle = (settings.instagram || 'TNzone.ofc').replace('@', '');
-    document.getElementById('insta-cta-link').href = `https://instagram.com/${encodeURIComponent(igHandle)}`;
-    document.getElementById('insta-handle-text').textContent = `@${igHandle}`;
-  } catch {}
-
-  try {
-    const { categories } = await API.get('/api/categories');
-    const row = document.getElementById('category-row');
-    const list = categories && categories.length ? categories : DEFAULT_CATEGORIES;
-    row.innerHTML = list.map(c => `
-      <a href="/catalogo?category=${encodeURIComponent(c.slug)}" class="category-card glass">
-        <div class="emoji">${categoryEmoji(c.slug)}</div>
-        <div class="name">${escapeHtml(c.name)}</div>
-      </a>
-    `).join('');
-  } catch {
-    const row = document.getElementById('category-row');
-    row.innerHTML = DEFAULT_CATEGORIES.map(c => `
-      <a href="/catalogo?category=${encodeURIComponent(c.slug)}" class="category-card glass">
-        <div class="emoji">${categoryEmoji(c.slug)}</div>
-        <div class="name">${escapeHtml(c.name)}</div>
-      </a>
-    `).join('');
+  // Busca com prazo máximo: se a API não responder de forma válida dentro
+  // de TIMEOUT_MS, seguimos com o fallback em vez de deixar a home esperando.
+  var TIMEOUT_MS = 2500;
+  function fetchJsonWithTimeout(url){
+    var timedOut = { ok: false, data: null };
+    var reqPromise = fetch(url)
+      .then(function(r){
+        return r.json().catch(function(){ return null; }).then(function(data){
+          return { ok: r.ok, data: data };
+        });
+      })
+      .catch(function(){ return { ok: false, data: null }; });
+    var timeoutPromise = new Promise(function(resolve){
+      setTimeout(function(){ resolve(timedOut); }, TIMEOUT_MS);
+    });
+    return Promise.race([reqPromise, timeoutPromise]);
   }
 
-  try {
-    const { products } = await API.get('/api/products?featured=1');
-    renderProductGrid('featured-grid', products.slice(0, 8));
-  } catch {}
+  // ---- topbar + hero + benefícios + banner ----
+  function renderHome(content){
+    var track = document.getElementById('topbarTrack');
+    var msgs = content.topbar || [];
+    track.innerHTML = msgs.concat(msgs).map(function(m){ return '<span>'+m+'</span>'; }).join('');
 
-  try {
-    const { products } = await API.get('/api/products');
-    renderProductGrid('new-grid', products.slice(0, 8));
-  } catch {}
-
-  try {
-    const { feedbacks } = await API.get('/api/feedbacks');
-    const grid = document.getElementById('reviews-grid');
-    if (!feedbacks.length) {
-      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="big">💬</div>Ainda não há avaliações aprovadas.</div>';
-    } else {
-      grid.innerHTML = feedbacks.slice(0, 6).map(f => `
-        <div class="review-card glass">
-          <div class="review-stars">${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}</div>
-          <div class="name">${escapeHtml(f.name)}</div>
-          ${f.comment ? `<div class="comment">${escapeHtml(f.comment)}</div>` : ''}
-          ${f.product_name ? `<div class="product-tag">Sobre: ${escapeHtml(f.product_name)}</div>` : ''}
-        </div>
-      `).join('');
+    // Hero: apenas imagens de fundo, com crossfade automático a cada 4s (sem texto/botões).
+    // Também dá pra passar arrastando com o dedo (touch) ou o mouse.
+    var slides = content.hero || [];
+    var heroCarousel = document.getElementById('heroCarousel');
+    function heroBg(s){
+      return s.image
+        ? '<img src="'+s.image+'" alt="">'
+        : '<svg viewBox="0 0 200 100" fill="none" stroke="#0a0a0a" stroke-width="1"><use href="#shoe"/></svg>';
     }
-  } catch {}
-}
+    heroCarousel.innerHTML = slides.map(function(s, i){
+      var cls = 'hero-slide'+(i===0?' active':'');
+      return s.link
+        ? '<a class="'+cls+'" href="'+s.link+'" draggable="false">'+heroBg(s)+'</a>'
+        : '<div class="'+cls+'">'+heroBg(s)+'</div>';
+    }).join('');
+    var heroSlideEls = heroCarousel.querySelectorAll('.hero-slide');
+    if(heroSlideEls.length > 1){
+      var heroIdx = 0;
+      var heroAuto;
+      function heroShow(i){
+        heroSlideEls[heroIdx].classList.remove('active');
+        heroIdx = (i + heroSlideEls.length) % heroSlideEls.length;
+        heroSlideEls[heroIdx].classList.add('active');
+      }
+      function heroNext(){ heroShow(heroIdx+1); }
+      function heroPrev(){ heroShow(heroIdx-1); }
+      function heroRestartAuto(){ clearInterval(heroAuto); heroAuto = setInterval(heroNext, 4000); }
+      heroRestartAuto();
 
-function categoryEmoji(slug) {
-  if (slug.includes('tenis')) return '👟';
-  if (slug.includes('camisa')) return '👕';
-  if (slug.includes('calca')) return '👖';
-  return '🛍️';
-}
+      // arrastar com o dedo (touch)
+      var heroStartX = null;
+      var heroDragged = false;
+      heroCarousel.addEventListener('click', function(e){ if(heroDragged){ e.preventDefault(); heroDragged = false; } });
+      heroCarousel.addEventListener('touchstart', function(e){ heroStartX = e.touches[0].clientX; }, {passive:true});
+      heroCarousel.addEventListener('touchend', function(e){
+        if(heroStartX==null) return;
+        var dx = e.changedTouches[0].clientX - heroStartX;
+        if(Math.abs(dx) > 40){ dx < 0 ? heroNext() : heroPrev(); heroRestartAuto(); heroDragged = true; setTimeout(function(){ heroDragged = false; }, 350); }
+        heroStartX = null;
+      }, {passive:true});
 
-loadHome();
-subscribeRealtime(() => loadHome());
+      // arrastar com o mouse
+      var heroMouseDownX = null;
+      heroCarousel.addEventListener('mousedown', function(e){ heroMouseDownX = e.clientX; e.preventDefault(); });
+      window.addEventListener('mouseup', function(e){
+        if(heroMouseDownX==null) return;
+        var dx = e.clientX - heroMouseDownX;
+        if(Math.abs(dx) > 40){ dx < 0 ? heroNext() : heroPrev(); heroRestartAuto(); heroDragged = true; setTimeout(function(){ heroDragged = false; }, 350); }
+        heroMouseDownX = null;
+      });
+
+      // scroll do mouse/trackpad (roda horizontal ou vertical)
+      var heroWheelLock = false;
+      heroCarousel.addEventListener('wheel', function(e){
+        var delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        if(Math.abs(delta) < 12 || heroWheelLock) return;
+        heroWheelLock = true;
+        delta > 0 ? heroNext() : heroPrev();
+        heroRestartAuto();
+        setTimeout(function(){ heroWheelLock = false; }, 500);
+      }, {passive:true});
+    }
+
+    document.getElementById('benefitsGrid').innerHTML = (content.benefits||[]).map(function(b){
+      return '<div class="benefit"><div class="b-icon">'+b.icon+'</div><div><h3>'+b.title+'</h3><p>'+b.text+'</p></div></div>';
+    }).join('');
+
+    var promoEl = document.getElementById('promoBanner');
+    if(content.promoBanner && content.promoBanner.active){
+      var pb = content.promoBanner;
+      document.getElementById('promoEyebrow').textContent = pb.eyebrow || '';
+      document.getElementById('promoTitle').textContent = pb.title || '';
+      document.getElementById('promoSubtitle').textContent = pb.subtitle || '';
+      var cta = document.getElementById('promoCta');
+      cta.textContent = pb.ctaLabel || 'VER OFERTAS';
+      cta.href = pb.ctaLink || '/catalogo.html';
+      promoEl.style.display = '';
+    } else {
+      promoEl.style.display = 'none';
+    }
+  }
+
+  renderHome(FALLBACK_HOME_CONTENT);
+  fetchJsonWithTimeout('/api/settings/home').then(function(res){
+    if(res.ok && res.data && Array.isArray(res.data.topbar)){
+      renderHome(res.data);
+    }
+  });
+
+  // ---- categorias ----
+  function renderCategories(cats){
+    var grid = document.getElementById('catGrid');
+    grid.innerHTML = cats.map(function(c){
+      var img = c.image ? '<img src="'+c.image+'" alt="">' : '';
+      return '<a class="cat-circle reveal" href="/catalogo.html?category='+encodeURIComponent(c.slug)+'">'+
+        '<div class="cc-ring">'+img+'</div>'+
+        '<h3>'+c.name+'</h3></a>';
+    }).join('');
+    RSShop.observeReveal(grid);
+  }
+
+  renderCategories(FALLBACK_CATEGORIES);
+  fetchJsonWithTimeout('/api/categories').then(function(res){
+    if(res.ok && res.data && Array.isArray(res.data.categories) && res.data.categories.length){
+      renderCategories(res.data.categories);
+    }
+  });
+
+  var catPrev = document.getElementById('catPrev'), catNext = document.getElementById('catNext');
+  if(catPrev && catNext){
+    var catGridEl = document.getElementById('catGrid');
+    var scrollBy = function(dir){ catGridEl.scrollBy({left: dir * (catGridEl.clientWidth * 0.7), behavior: 'smooth'}); };
+    catPrev.addEventListener('click', function(){ scrollBy(-1); });
+    catNext.addEventListener('click', function(){ scrollBy(1); });
+  }
+
+  var grid = document.getElementById('productGrid');
+  fetch('/api/products?sort=relevant&pageSize=8')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var list = (data && data.products) || [];
+      var brands = (data && data.brands) || [];
+      var brandsTrack = document.getElementById('brandsTrack');
+      if(brands.length){
+        document.getElementById('brandsWrap').style.display = '';
+        var chunk = brands.concat(brands);
+        brandsTrack.innerHTML = chunk.map(function(b){ return '<a href="/catalogo.html?brand='+encodeURIComponent(b)+'">'+b+'</a>'; }).join('');
+      }
+      if(!list.length){
+        grid.innerHTML = '<p style="grid-column:1/-1;color:var(--mute);text-align:center;padding:40px 0">Tênis novos chegando em breve.</p>';
+        return;
+      }
+      var byId = {}; list.forEach(function(p){ byId[p.id]=p; });
+      grid.innerHTML = list.map(RSShop.productCardHtml).join('');
+      RSShop.wireProductGrid(grid, byId);
+      grid.querySelectorAll('.product-card').forEach(function(el){ el.classList.add('reveal'); });
+      RSShop.observeReveal(grid);
+    })
+    .catch(function(){
+      grid.innerHTML = '<p style="grid-column:1/-1;color:var(--mute);text-align:center;padding:40px 0">Não deu pra carregar os produtos agora. Tenta de novo daqui a pouco.</p>';
+    });
+
+  RSShop.observeReveal(document);
+
+  document.getElementById('newsForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    document.getElementById('newsMsg').style.display = 'block';
+    this.reset();
+  });
+})();
 </script>
 </body>
 </html>

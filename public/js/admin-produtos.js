@@ -111,13 +111,13 @@
       const catLabel = (p.category_tags || []).map(categoryTagLabel).join(', ');
       const img = p.images && p.images[0] ? p.images[0] : '../assets/product-tenis.jpg';
       return `
-        <tr>
-          <td><img class="thumb" src="${img}" alt=""></td>
-          <td>${esc(p.name)}${p.featured ? ' ⭐' : ''}</td>
+        <tr class="prod-row">
+          <td class="cell-thumb"><img class="thumb" src="${esc(img)}" alt=""></td>
+          <td class="cell-name">${esc(p.name)}${p.featured ? ' ⭐' : ''}</td>
           <td>${catLabel ? esc(catLabel) : '—'}</td>
           <td>${money(p.promo_price != null ? p.promo_price : p.price)}${p.promo_price != null ? ` <span style="color:var(--grey); text-decoration:line-through; font-size:0.78rem;">${money(p.price)}</span>` : ''}</td>
           <td>
-            <input type="number" min="0" value="${p.stock}" data-stock="${p.id}" style="width:64px; background:var(--black-2); border:1px solid var(--line); color:var(--white-warm); padding:6px 8px; border-radius:2px;">
+            <input type="number" inputmode="numeric" min="0" value="${p.stock}" data-stock="${p.id}" class="stock-input" aria-label="Estoque de ${esc(p.name)}">
           </td>
           <td><span class="pill ${p.active ? 'pill-on' : 'pill-off'}">${p.active ? 'Ativo' : 'Inativo'}</span></td>
           <td class="row-actions">

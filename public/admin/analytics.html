@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
 <title>Análise de usuários | Painel TN'zone</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0a0a'/%3E%3Ctext x='50' y='68' font-size='60' fill='white' text-anchor='middle' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E">
@@ -12,6 +13,7 @@
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="../css/catalogo.css">
 <link rel="stylesheet" href="../css/analytics.css">
+<link rel="stylesheet" href="../css/admin-mobile.css">
 </head>
 <body class="admin-body">
 
@@ -65,13 +67,14 @@
       <button class="az-period-btn" data-range="last_year">Ano passado</button>
       <button class="az-period-btn" data-range="12m">Últimos 12 meses</button>
       <button class="az-period-btn" data-range="custom">Personalizado</button>
-      <span class="az-custom-range" id="customRange" style="display:none;">
+    </div>
+
+    <span class="az-custom-range" id="customRange" style="display:none;">
         <input type="date" id="customFrom">
         <span style="color:var(--grey);">até</span>
         <input type="date" id="customTo">
         <button class="az-export-btn" id="customApply" type="button">Aplicar</button>
       </span>
-    </div>
 
     <div class="az-stat-grid" id="statGrid">
       <div class="az-stat-card"><div class="skeleton sk-line" style="width:50%; height:20px;"></div></div>

@@ -34,6 +34,9 @@ function dbFailureHint(err) {
   if (code === 'ENOTFOUND') return 'o endereço (host) da SUPABASE_DB_POOLER_URL não existe.';
   if (code === 'ETIMEDOUT' || code === 'ECONNREFUSED' || /timeout/i.test(msg)) return 'não foi possível alcançar o servidor do banco (confira host e porta).';
   if (/EMAXCONNSESSION|max clients/i.test(msg)) return 'limite de conexões do modo sessão; troque a porta 5432 por 6543.';
+  if (code === '42703' || code === '42P01' || code === '42804' || code === '42P07') {
+    return `o banco já tem tabelas de outro projeto (${code}: ${msg.slice(0, 90)}). Use um projeto Supabase só para esta loja ou defina DB_SCHEMA no Netlify.`;
+  }
   if (/ADMIN_EMAIL|ADMIN_PASSWORD/i.test(msg)) return 'confira ADMIN_EMAIL e ADMIN_PASSWORD.';
   if (/invalid url|invalid connection/i.test(msg)) return 'a SUPABASE_DB_POOLER_URL está mal formatada.';
   return `falha ao preparar o banco (${code || 'erro'}: ${msg.slice(0, 140)}).`;

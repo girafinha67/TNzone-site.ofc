@@ -5,7 +5,7 @@ const db = require('../lib/db');
 const { slugify, asyncHandler, parseIntId, escapeLike } = require('../lib/http-utils');
 const { log } = require('../lib/auth');
 const { deleteImage } = require('../lib/upload');
-const { VALID_CATEGORY_SLUGS } = require('../lib/category-tags');
+const { VALID_CATEGORY_SLUGS, CATEGORY_SLUG_TO_TAG } = require('../lib/category-tags');
 
 const router = express.Router();
 
@@ -102,13 +102,24 @@ const SORT_MAP = {
 router.get(
   '/products',
   asyncHandler(async (req, res) => {
+    // Lista pública sempre fresca: produto recém-cadastrado não pode ficar preso em cache.
+    res.set('Cache-Control', 'no-store');
     const q = req.query;
     const clauses = ['active = 1'];
     const params = [];
 
     if (q.category) {
-      clauses.push('category_id = (SELECT id FROM categories WHERE slug = ?)');
-      params.push(q.category);
+      // O admin grava a categoria em products.category_tags (multi-seleção) e deixa
+      // category_id vazio; o catálogo filtra por slug da tabela categories. Casamos
+      // pelos dois caminhos, senão o produto novo nunca aparece em ?category=...
+      const slug = String(q.category).trim();
+      const tagSlugs = new Set([slug]);
+      if (CATEGORY_SLUG_TO_TAG[slug]) tagSlugs.add(CATEGORY_SLUG_TO_TAG[slug]);
+      const tagList = Array.from(tagSlugs);
+      clauses.push(
+        `(category_id = (SELECT id FROM categories WHERE slug = ?) OR ${tagList.map(() => 'category_tags ILIKE ?').join(' OR ')})`
+      );
+      params.push(slug, ...tagList.map((s) => `%"${escapeLike(s)}"%`));
     }
     if (q.categories) {
       const slugs = String(q.categories)

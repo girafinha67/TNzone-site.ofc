@@ -58,6 +58,7 @@ async function saveBase64Image(dataUrl) {
     throw err;
   }
 
+  await ensureBucket(BUCKET, MAX_BYTES, Object.keys(ALLOWED));
   const { url, key } = supabaseConfig();
   const objectPath = `${FOLDER}/${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ALLOWED[mime]}`;
   const response = await fetch(objectApiUrl(url, objectPath), {
@@ -125,35 +126,44 @@ const FEEDBACK_ALLOWED = {
   'video/quicktime': { ext: 'mov', kind: 'video' },
   'video/webm': { ext: 'webm', kind: 'video' },
 };
-let feedbackBucketReady = false;
 
 function feedbackPublicPrefix() {
   const { url } = supabaseConfig();
   return `${url}/storage/v1/object/public/${FEEDBACK_BUCKET}/`;
 }
 
-async function ensureFeedbackBucket() {
-  if (feedbackBucketReady) return;
+// Cria o bucket público se ele ainda não existir (projeto Supabase novo). Memoizado
+// por container, então só custa uma chamada na primeira vez.
+const bucketsReady = new Set();
+async function ensureBucket(id, fileSizeLimit, allowedMimeTypes) {
+  if (bucketsReady.has(id)) return;
   const { url, key } = supabaseConfig();
-  const res = await fetch(`${url}/storage/v1/bucket`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, apikey: key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      id: FEEDBACK_BUCKET,
-      name: FEEDBACK_BUCKET,
-      public: true,
-      file_size_limit: FEEDBACK_VIDEO_MAX,
-      allowed_mime_types: Object.keys(FEEDBACK_ALLOWED),
-    }),
-  });
+  const create = (withLimit) =>
+    fetch(`${url}/storage/v1/bucket`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, apikey: key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        name: id,
+        public: true,
+        ...(withLimit ? { file_size_limit: fileSizeLimit, allowed_mime_types: allowedMimeTypes } : {}),
+      }),
+    });
+  let res = await create(true);
+  // Se o plano do Supabase tiver limite global menor, cria sem limite próprio.
+  if (res.status === 413) res = await create(false);
   // 200 = criado; 400/409 = já existe. Qualquer outro erro é problema de configuração.
   if (!res.ok && res.status !== 400 && res.status !== 409) {
     const body = await res.text();
-    const err = new Error(`Não foi possível preparar o armazenamento dos feedbacks: ${body.slice(0, 200)}`);
+    const err = new Error(`Não foi possível preparar o armazenamento (${id}): ${body.slice(0, 200)}`);
     err.status = 502;
     throw err;
   }
-  feedbackBucketReady = true;
+  bucketsReady.add(id);
+}
+
+function ensureFeedbackBucket() {
+  return ensureBucket(FEEDBACK_BUCKET, FEEDBACK_VIDEO_MAX, Object.keys(FEEDBACK_ALLOWED));
 }
 
 // Valida tipo/tamanho e devolve { signedUrl, publicUrl, kind }.

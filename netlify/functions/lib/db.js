@@ -3,7 +3,24 @@
 const { Pool } = require('pg');
 const crypto = require('node:crypto');
 
-const databaseUrl = process.env.SUPABASE_DB_POOLER_URL || process.env.DATABASE_URL;
+const rawDatabaseUrl = process.env.SUPABASE_DB_POOLER_URL || process.env.DATABASE_URL;
+
+// O pooler do Supabase na porta 5432 é modo SESSÃO (limite de ~15 clientes, estoura fácil
+// em serverless: EMAXCONNSESSION). Na porta 6543 (modo transação) não há esse problema, então
+// trocamos automaticamente, a menos que DB_SCHEMA exija modo sessão (o SET vale por conexão).
+function toTransactionPooler(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.endsWith('.pooler.supabase.com') && u.port === '5432' && !process.env.DB_SCHEMA) {
+      u.port = '6543';
+      return u.toString();
+    }
+  } catch {
+    // URL inválida: deixa o pg reportar o erro.
+  }
+  return url;
+}
+const databaseUrl = rawDatabaseUrl ? toTransactionPooler(rawDatabaseUrl) : rawDatabaseUrl;
 
 if (!databaseUrl) {
   console.warn('[rshoes] SUPABASE_DB_POOLER_URL não definida — configure a connection string do Supabase nas env vars do Netlify.');
@@ -25,6 +42,20 @@ const pool = new Pool({
   idleTimeoutMillis: 10_000,
   connectionTimeoutMillis: 10_000,
 });
+
+// Isolamento opcional: com DB_SCHEMA definido, todas as tabelas desta loja ficam num
+// schema próprio, sem tocar em tabelas de outro projeto que use o mesmo banco.
+// Precisa de pooler em modo sessão (porta 5432), pois o SET vale por conexão.
+const dbSchema = String(process.env.DB_SCHEMA || '').trim();
+if (dbSchema) {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(dbSchema)) {
+    throw new Error('DB_SCHEMA inválido: use só letras, números e _.');
+  }
+  pool.on('connect', (client) => {
+    client.query(`CREATE SCHEMA IF NOT EXISTS "${dbSchema}"`).catch((e) => console.error('[rshoes] CREATE SCHEMA falhou:', e.message));
+    client.query(`SET search_path TO "${dbSchema}"`).catch((e) => console.error('[rshoes] SET search_path falhou:', e.message));
+  });
+}
 
 pool.on('error', (err) => {
   // Erros em clients ociosos (ex.: conexão derrubada pelo pooler) não devem

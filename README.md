@@ -246,3 +246,29 @@ O PicPay documenta o webhook como uma notificação a cada mudança de status e 
 - Limites: foto até 8 MB, vídeo até 50 MB (o plano do Supabase também precisa permitir esse tamanho).
 - Todo envio entra como `pending`. A moderação fica em `/admin/feedbacks.html` (aprovar, rejeitar, excluir). No site aparece só "Nome S.", o nome completo fica apenas no painel.
 - A tabela `feedbacks` é criada sozinha no `db.init()`.
+
+## Banco compartilhado com outro projeto (DB_SCHEMA)
+
+Se o Supabase já tiver tabelas de outro site (ex.: `products` sem a coluna `brand`), defina `DB_SCHEMA=tnzone_loja` no Netlify. Todas as tabelas desta loja passam a ser criadas nesse schema, sem mexer nas do outro projeto. Requer o pooler na porta 5432 (modo sessão). Sem `DB_SCHEMA`, as tabelas ficam em `public`.
+
+
+## 7. Painel admin no celular
+
+O painel (`/admin/*`) é responsivo (`public/css/admin-mobile.css` + `public/js/admin-common.js`):
+
+- até 860px: o menu lateral vira uma gaveta aberta pelo botão ☰ na barra do topo;
+- até 640px: as tabelas viram cards (o rótulo de cada campo vem do `<th>`), os
+  formulários abrem como *bottom sheet* com o botão Salvar fixo embaixo, e os
+  campos usam fonte de 16px para o iOS não dar zoom ao digitar;
+- acima de 860px o layout de desktop continua igual.
+
+## 8. Categorias: como o catálogo encontra o produto
+
+O formulário de produto grava a categoria em `products.category_tags`
+(slugs `low`, `high`, `slip-on`, `skate`, `edicao-limitada`, `vans`), enquanto os
+filtros do catálogo e os cards da home usam os slugs da tabela `categories`
+(`nike`, `adidas`, `new-balance`, `infantis`, `linha-premium`, `vans`).
+`CATEGORY_SLUG_TO_TAG` em `netlify/functions/lib/category-tags.js` liga os dois, e
+`GET /api/products?category=...` procura por `category_id` **ou** pela tag. Se
+você criar uma categoria nova, adicione o par nesse mapa e em `category-tags.js`
+(front e back).

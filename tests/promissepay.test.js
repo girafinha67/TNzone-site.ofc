@@ -341,3 +341,21 @@ test('a Netlify Function do webhook só aceita POST', async () => {
   assert.equal(r.statusCode, 405);
   assert.equal(r.headers.Allow, 'POST');
 });
+
+test('WhatsApp via CallMeBot: monta a URL com texto codificado (fetch falso, sem rede)', async () => {
+  const wa = require('../netlify/functions/lib/whatsapp');
+  const saved = { fetch: globalThis.fetch, k: process.env.CALLMEBOT_API_KEY, p: process.env.WHATSAPP_OWNER_PHONE };
+  let seen;
+  globalThis.fetch = async (url) => { seen = url; return { ok: true, status: 200, text: async () => 'Message queued' }; };
+  process.env.CALLMEBOT_API_KEY = 'KEY123'; process.env.WHATSAPP_OWNER_PHONE = '+55 61 98655-3995';
+  try {
+    const r = await wa.notifyOwner('Total R$ 10,00 & mais');
+    assert.equal(r.sent, true);
+    assert.ok(seen.startsWith('https://api.callmebot.com/whatsapp.php?phone=5561986553995&text='));
+    assert.ok(seen.includes('R%24%2010') && seen.includes('%26') && seen.endsWith('&apikey=KEY123'));
+  } finally {
+    globalThis.fetch = saved.fetch;
+    if (saved.k === undefined) delete process.env.CALLMEBOT_API_KEY; else process.env.CALLMEBOT_API_KEY = saved.k;
+    if (saved.p === undefined) delete process.env.WHATSAPP_OWNER_PHONE; else process.env.WHATSAPP_OWNER_PHONE = saved.p;
+  }
+});

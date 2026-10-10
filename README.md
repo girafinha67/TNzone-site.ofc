@@ -162,6 +162,8 @@ O código usa um endpoint compatível com o formato de envio de texto da WhatsAp
 | `WHATSAPP_TOKEN` | token Bearer da API |
 | `WHATSAPP_OWNER_PHONE` | número do dono que receberá a notificação, com DDI |
 
+**Opção gratuita (CallMeBot):** defina `CALLMEBOT_API_KEY` (e `WHATSAPP_OWNER_PHONE`); com ela, o aviso vai por CallMeBot e `WHATSAPP_API_URL`/`WHATSAPP_TOKEN` não são necessários.
+
 **Importante:** chaves, secrets e tokens não devem ser colocados em HTML/JavaScript público nem enviados para o navegador.
 
 ### Publicar e ativar (passo a passo)

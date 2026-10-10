@@ -1,6 +1,22 @@
 'use strict';
 
+// Opção gratuita: CallMeBot (https://www.callmebot.com/blog/free-api-whatsapp-messages/).
+// Ativada quando CALLMEBOT_API_KEY está definida; avisa o próprio dono em WHATSAPP_OWNER_PHONE.
+async function notifyViaCallMeBot(message) {
+  const key = process.env.CALLMEBOT_API_KEY;
+  const to = String(process.env.WHATSAPP_OWNER_PHONE || '').replace(/\D/g, '');
+  if (!key || !to) return { sent: false, reason: 'not_configured' };
+  const url = `https://api.callmebot.com/whatsapp.php?phone=${to}&text=${encodeURIComponent(message)}&apikey=${encodeURIComponent(key)}`;
+  const response = await fetch(url, { method: 'GET' });
+  const text = await response.text().catch(() => '');
+  if (!response.ok || /error/i.test(text)) {
+    throw new Error(`Falha ao enviar WhatsApp via CallMeBot (${response.status})`);
+  }
+  return { sent: true };
+}
+
 async function notifyOwner(message) {
+  if (process.env.CALLMEBOT_API_KEY) return notifyViaCallMeBot(message);
   const url = process.env.WHATSAPP_API_URL;
   const token = process.env.WHATSAPP_TOKEN;
   const to = String(process.env.WHATSAPP_OWNER_PHONE || '').replace(/\D/g, '');

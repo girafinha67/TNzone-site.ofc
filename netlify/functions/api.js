@@ -22,6 +22,23 @@ const app = express();
 
 app.use(express.json({ limit: '15mb' }));
 
+// Traduz a falha de init() numa causa legível (o erro completo continua no log da function).
+function dbFailureHint(err) {
+  const code = err && err.code;
+  const msg = String((err && err.message) || '').replace(/postgres(ql)?:\/\/\S+/gi, '[url]');
+  if (!process.env.SUPABASE_DB_POOLER_URL && !process.env.DATABASE_URL) {
+    return 'a variável SUPABASE_DB_POOLER_URL não está definida no Netlify (ou falta fazer um novo deploy).';
+  }
+  if (code === '28P01' || /password authentication failed/i.test(msg)) return 'senha do banco incorreta na SUPABASE_DB_POOLER_URL.';
+  if (/tenant or user not found/i.test(msg)) return 'usuário ou região do pooler incorretos (copie a URL em Connect > Transaction pooler).';
+  if (code === 'ENOTFOUND') return 'o endereço (host) da SUPABASE_DB_POOLER_URL não existe.';
+  if (code === 'ETIMEDOUT' || code === 'ECONNREFUSED' || /timeout/i.test(msg)) return 'não foi possível alcançar o servidor do banco (confira host e porta).';
+  if (/EMAXCONNSESSION|max clients/i.test(msg)) return 'limite de conexões do modo sessão; troque a porta 5432 por 6543.';
+  if (/ADMIN_EMAIL|ADMIN_PASSWORD/i.test(msg)) return 'confira ADMIN_EMAIL e ADMIN_PASSWORD.';
+  if (/invalid url|invalid connection/i.test(msg)) return 'a SUPABASE_DB_POOLER_URL está mal formatada.';
+  return `falha ao preparar o banco (${code || 'erro'}: ${msg.slice(0, 140)}).`;
+}
+
 // Garante schema/seed/admin inicial antes de qualquer rota (memoizado por container).
 app.use(async (req, res, next) => {
   try {
@@ -30,7 +47,7 @@ app.use(async (req, res, next) => {
     next();
   } catch (err) {
     console.error('[rshoes] Falha ao inicializar banco de dados:', err);
-    res.status(500).json({ error: 'Erro ao conectar ao banco de dados. Verifique SUPABASE_DB_POOLER_URL.' });
+    res.status(500).json({ error: `Erro ao conectar ao banco de dados: ${dbFailureHint(err)}` });
   }
 });
 

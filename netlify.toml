@@ -32,6 +32,7 @@
     X-Robots-Tag = "noindex, nofollow"
     Cache-Control = "no-store"
 
-# Reconcilia pagamentos pendentes diretamente na API do PicPay. Horário em UTC.
+# Rede de segurança: reconsulta na API da PromissePay os pedidos PENDING e encerra os expirados.
+# O webhook (/.netlify/functions/promissepay-webhook) é o caminho principal. Horário em UTC.
 [functions."reconcile-payments"]
   schedule = "*/10 * * * *"

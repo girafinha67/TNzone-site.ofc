@@ -239,7 +239,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 
--- Idempotência dos webhooks PicPay: o mesmo evento pode ser reenviado.
+-- Idempotência dos webhooks de pagamento: o mesmo evento pode ser reenviado.
 CREATE TABLE IF NOT EXISTS payment_webhook_events (
   id BIGSERIAL PRIMARY KEY,
   event_id TEXT NOT NULL UNIQUE,
@@ -375,6 +375,20 @@ CREATE TABLE IF NOT EXISTS analytics_events (
   await exec(`ALTER TABLE products ADD COLUMN IF NOT EXISTS category_tags TEXT NOT NULL DEFAULT '[]';`);
   await exec(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS description TEXT;`);
   await exec(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_cart INTEGER NOT NULL DEFAULT 0;`);
+
+  // PromissePay (PIX). Colunas aditivas: nada é removido, pedidos antigos (PicPay) seguem intactos.
+  // Mesmo SQL em migrations/2026-10-10_promissepay.sql, para rodar manualmente no Supabase se preferir.
+  await exec(`
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_provider TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS promisse_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS promisse_status TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS promisse_fee INTEGER;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS promisse_checked_at TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS checkout_token TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_orders_promisse_id ON orders(promisse_id) WHERE promisse_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_orders_checkout_token ON orders(checkout_token) WHERE checkout_token IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_orders_provider_status ON orders(payment_provider, status);
+  `);
 
   await exec(`
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);

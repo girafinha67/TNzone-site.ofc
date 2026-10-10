@@ -91,48 +91,66 @@ netlify dev
 O `netlify dev` sobe o site e as functions juntos em `http://localhost:8888`,
 usando as mesmas variáveis de ambiente (pode criar um arquivo `.env` local).
 
-## 6. Pagamento real via PicPay + WhatsApp
+## 6. Pagamento PIX real via PromissePay + WhatsApp
 
-O projeto agora possui checkout Pix real em `/checkout.html?produto=SLUG`.
+Documentação oficial: https://promisse.com.br/docs (base `https://api.promisse.com.br`).
 
-Fluxo:
+### Fluxo
 
-1. O cliente escolhe o produto e a quantidade.
-2. Informa nome completo, CPF, e-mail, telefone, tamanho/cor e dados adicionais.
-3. O backend calcula o preço diretamente do produto no banco e cria uma cobrança Pix no PicPay.
-4. A página exibe o QR Code e o Pix Copia e Cola.
-5. O navegador apenas consulta o pedido; **não confirma pagamento por conta própria**.
-6. O PicPay chama `POST /api/payments/picpay/webhook`.
-7. O webhook valida o `Authorization` recebido do PicPay, marca o pedido como `PAID`, registra horário/transactionId, libera/baixa estoque conforme o fluxo e calcula a pontuação.
-8. Após o pagamento confirmado, o sistema envia automaticamente os dados do pedido para o WhatsApp configurado.
+```text
+Cliente escolhe produto/carrinho e preenche os dados  (/checkout.html)
+  ↓  POST /api/payments/pix/create  (ou /create-cart)  — preço lido do BANCO, nunca do navegador
+Pedido PENDING + estoque reservado + checkout_token (idempotência)
+  ↓  POST https://api.promisse.com.br/transactions  { amount } — só pelo backend, chave no servidor
+Cobrança real: id, copyPaste, qrCodeBase64, expiresAt  →  gravados no pedido (orders.promisse_id)
+  ↓
+Checkout exibe QR Code + copia-e-cola + contagem regressiva (dados vindos do gateway)
+  ↓  cliente paga
+PromissePay → POST /.netlify/functions/promissepay-webhook   (evento payment.approved)
+  ↓  valida promisse-signature = sha256=HMAC-SHA256(corpo BRUTO, secret)  — senão 401
+  ↓  localiza o pedido pelo id da transação  — desconhecida → 404
+  ↓  confirma na API: GET /transactions/:id  (status PAID, tipo DEPOSIT, valor == pedido)
+  ↓  transação PostgreSQL + FOR UPDATE + registro do evento (idempotência)
+PENDING → PAID  →  notificação WhatsApp (outbox)
+```
 
-A API Pix do PicPay usa OAuth 2.0 `client_credentials`. As credenciais ficam somente no backend. O token de acesso é temporário; o backend faz cache/renovação automática. Consulte a documentação oficial do PicPay antes de colocar em produção:
-https://developers-business.picpay.com/pix/docs/authentication
+O navegador **só consulta** `GET /api/payments/orders/:id`. Nenhum parâmetro de URL, status enviado
+pelo cliente ou visita à página de sucesso marca um pedido como pago. Se o pedido ainda está pendente,
+essa rota reconfirma na API da PromissePay (no máximo 1 consulta a cada 10 s por pedido).
 
-### Variáveis de ambiente — PicPay
+### Garantias implementadas
 
-Configure no Netlify:
+- **Idempotência da criação**: a API da PromissePay não documenta chave de idempotência, então o controle é
+  nosso: o navegador manda um `checkoutToken` único por tentativa (`orders.checkout_token`, índice único).
+  Reenvio/duplo clique devolve o mesmo pedido, sem nova cobrança. O POST **nunca** é repetido automaticamente.
+- **Idempotência do webhook**: chave `promisse:<evento>:<data.id>` em `payment_webhook_events.event_id` (UNIQUE).
+  Entrega duplicada → 200 sem alterar nada.
+- **Valor**: pago só se `amount` (centavos) da API == valor do pedido. Divergência → 409, pedido segue pendente.
+- **Isolamento**: o pedido é sempre achado pelo `id` da transação (`orders.promisse_id`, único).
+- **Falha na criação / timeout (8 s)**: pedido vira `ERROR` e o estoque volta.
+- **Pedido órfão** (cobrança criada mas não vinculada): encerrado pela reconciliação em 15 min.
+- **Reconciliação** a cada 10 min (`reconcile-payments`): reconsulta pedidos `PENDING`, marca `EXPIRED` os vencidos.
+- Segredos nunca vão para o navegador nem para os logs.
 
-| Variável | Exemplo/descrição |
+### Estados do pedido
+
+`PENDING` (aguardando) · `PAID` (aprovado) · `EXPIRED` (PIX vencido, definido localmente a partir do `expiresAt`) ·
+`FAILED` (evento `payment.failed`: recusada ou expirada) · `ERROR` (falha ao criar a cobrança).
+
+### Variáveis de ambiente
+
+| Variável | Descrição |
 |---|---|
-| `PICPAY_ENV` | `production` ou `sandbox` |
-| `PICPAY_CLIENT_ID` | client_id gerado no Painel Lojista |
-| `PICPAY_CLIENT_SECRET` | client_secret do PicPay |
-| `PICPAY_WEBHOOK_TOKEN` | token exibido pelo PicPay ao configurar a URL de notificação |
-| `PICPAY_CALLER_ORIGIN` | opcional, identificação da integração |
-| `PICPAY_PIX_EXPIRATION_SECONDS` | opcional; padrão `900` |
-| `PICPAY_COUNTRY_CODE` | opcional; padrão `55` |
-| `POINTS_PER_REAL` | opcional; padrão `1` ponto por R$ 1,00 |
+| `PROMISSEPAY_API_KEY` | chave `sk_live_...` (Painel PromissePay → Integrações → Credenciais). Escopos mínimos: `payments.create` e `payments.read` |
+| `PROMISSEPAY_WEBHOOK_SECRET` | secret do webhook, mostrada ao cadastrá-lo (valida a assinatura HMAC) |
+| `PROMISSEPAY_BASE_URL` | opcional; padrão `https://api.promisse.com.br` (HTTPS obrigatório) |
+| `PROMISSEPAY_TIMEOUT_MS` | opcional; padrão `8000` |
 
-Produção usa `https://ecommerce-api.svcp.picpay.com`; homologação usa `https://ecommerce-api.svcp.ppay.me`.
+### Webhook
 
-### URL do webhook no PicPay
-
-Depois do deploy, informe no Painel Lojista a URL:
-
-`https://SEU-DOMINIO/api/payments/picpay/webhook`
-
-A URL precisa ser HTTPS e o PicPay envia o token de autenticação no header `Authorization`. Não coloque query parameters nessa URL.
+URL: `https://tnzone-site-loja.netlify.app/.netlify/functions/promissepay-webhook`
+(arquivo `netlify/functions/promissepay-webhook.js`). Evento a assinar: `payment.approved`
+(e `payment.failed` para encerrar pedidos recusados/expirados).
 
 ### Variáveis de ambiente — WhatsApp
 
@@ -144,100 +162,28 @@ O código usa um endpoint compatível com o formato de envio de texto da WhatsAp
 | `WHATSAPP_TOKEN` | token Bearer da API |
 | `WHATSAPP_OWNER_PHONE` | número do dono que receberá a notificação, com DDI |
 
-A mensagem enviada contém: número do pedido, produto, quantidade, pontuação, valor, nome, CPF, e-mail, telefone, tamanho/cor, dados adicionais, status de pagamento, horário e identificador da cobrança PicPay.
+**Importante:** chaves, secrets e tokens não devem ser colocados em HTML/JavaScript público nem enviados para o navegador.
 
-**Importante:** tokens, `client_secret` e credenciais não devem ser colocados em HTML/JavaScript público nem enviados para o navegador.
+### Publicar e ativar (passo a passo)
 
-### Teste antes de produção
+1. Netlify → Site configuration → Environment variables: cadastre `PROMISSEPAY_API_KEY` e `PROMISSEPAY_WEBHOOK_SECRET`
+   (o secret só existe depois do passo 3; cadastre a chave agora e o secret logo em seguida).
+2. Publique o projeto (o primeiro request aplica as colunas novas sozinho; o SQL equivalente está em
+   `migrations/2026-10-10_promissepay.sql`).
+3. Painel PromissePay → Integrações → Webhooks: URL `https://tnzone-site-loja.netlify.app/.netlify/functions/promissepay-webhook`,
+   eventos `payment.approved` e `payment.failed`. Copie a secret **exatamente como exibida** para `PROMISSEPAY_WEBHOOK_SECRET`
+   e faça novo deploy. (O cadastro envia `{"event":"webhook.test"}` e exige 200/201/202 — a função responde 200.)
+4. **Não** restrinja a chave por IP: as Netlify Functions não têm IP fixo.
+5. Teste real com o menor valor possível (R$ 0,50): gere o PIX, pague, confira `PAID` no pedido e nos logs da função.
 
-Recomenda-se configurar primeiro `PICPAY_ENV=sandbox`, testar criação da cobrança e o webhook, e só depois trocar para `production`.
+### Testes automatizados
 
-O PicPay documenta a API Pix, os estados de cobrança e o webhook no portal oficial:
-https://developers-business.picpay.com/pix/docs/introduction
-https://developers-business.picpay.com/pix/docs/webhook
-
-
-## Pagamentos PicPay — produção e idempotência
-
-O checkout usa a API Pix do PicPay no backend. O navegador nunca decide que um pagamento foi recebido.
-
-### Webhook
-
-Endpoint:
-
-`POST /api/payments/picpay/webhook`
-
-No Painel Lojista do PicPay, configure a URL HTTPS acima. O PicPay envia o token no header `Authorization` e o header `event_type` com `TransactionUpdateMessage`. O código valida os dois antes de processar o evento.
-
-O webhook também exige `type=PAYMENT`, `id` do evento e `data.merchantChargeId`. O pedido é localizado pelo `merchant_charge_id` e atualizado dentro de uma transação PostgreSQL com `SELECT ... FOR UPDATE`.
-
-### Proteções de produção
-
-- `payment_webhook_events.event_id UNIQUE` impede processar o mesmo evento duas vezes.
-- `orders.merchant_charge_id UNIQUE` garante uma cobrança externa por pedido.
-- `FOR UPDATE` serializa atualizações concorrentes do mesmo pedido.
-- `PAID` só é aceito quando o pagamento é PIX e o valor recebido em centavos coincide com o valor do pedido.
-- O estoque só é devolvido uma vez, enquanto `stock_reserved=1`.
-- A notificação de WhatsApp usa uma outbox (`payment_notifications`) com `UNIQUE(order_id, type)`, permitindo nova tentativa sem duplicar a notificação lógica.
-- O WhatsApp fica fora da transação de pagamento. Se o WhatsApp falhar, o pedido continua `PAID`.
-- Existe reconciliação automática a cada 10 minutos para pedidos `PENDING` com mais de 2 minutos, consultando diretamente `GET /charge/:merchantChargeId` no PicPay.
-- Também existe reconciliação manual para administrador:
-  `POST /api/admin/payments/picpay/reconcile/:merchantChargeId`
-
-### Variáveis obrigatórias
-
-```env
-PICPAY_ENV=production
-PICPAY_CLIENT_ID=
-PICPAY_CLIENT_SECRET=
-PICPAY_WEBHOOK_TOKEN=
-PICPAY_CALLER_ORIGIN=TN'zone
-PICPAY_PIX_EXPIRATION_SECONDS=900
-PICPAY_COUNTRY_CODE=55
-
-POINTS_PER_REAL=1
-
-WHATSAPP_API_URL=
-WHATSAPP_TOKEN=
-WHATSAPP_OWNER_PHONE=
-TZ=America/Fortaleza
+```bash
+npm test
 ```
 
-Nunca coloque `PICPAY_CLIENT_SECRET`, `PICPAY_WEBHOOK_TOKEN` ou `WHATSAPP_TOKEN` no frontend.
-
-### Fluxo de confirmação
-
-```text
-Cliente
-  ↓
-Checkout
-  ↓
-Pedido PENDING + estoque reservado
-  ↓
-PicPay gera cobrança PIX
-  ↓
-Cliente paga
-  ↓
-PicPay → webhook
-  ↓
-valida Authorization + event_type + type + event id
-  ↓
-transação PostgreSQL + FOR UPDATE
-  ↓
-valida merchantChargeId + PIX + valor
-  ↓
-PENDING → PAID
-  ↓
-cria notificação WhatsApp PENDING
-  ↓
-COMMIT
-  ↓
-envia WhatsApp
-  ↓
-SENT
-```
-
-O PicPay documenta o webhook como uma notificação a cada mudança de status e também disponibiliza a consulta de uma charge pelo `merchantChargeId`, usada pelo reconciliador deste projeto.
+Usam fakes (identificados nos arquivos de teste) para o gateway e o banco; não fazem chamadas reais.
+Eles NÃO substituem um teste real ponta a ponta com uma cobrança de valor mínimo (R$ 0,50).
 
 ## Feedbacks de clientes
 

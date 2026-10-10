@@ -70,7 +70,7 @@ function formatPaidOrder(order, items) {
     '',
     `*Status:* PAGAMENTO EFETUADO`,
     `*Horário:* ${when}`,
-    `*PicPay Charge:* ${order.merchant_charge_id}`,
+    `*Transação PromissePay:* ${order.promisse_id || order.merchant_charge_id}`,
   ].filter(Boolean).join('\n');
 }
 

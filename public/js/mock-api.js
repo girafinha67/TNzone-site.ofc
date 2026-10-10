@@ -34,7 +34,7 @@
     benefits: [
       { icon: '🚚', title: 'Frete grátis', text: 'Em pedidos acima de R$ 499.' },
       { icon: '↩️', title: 'Troca fácil', text: 'Até 7 dias depois que você receber.' },
-      { icon: '🔒', title: 'Pagamento seguro', text: 'Pix seguro, pelo PicPay.' },
+      { icon: '🔒', title: 'Pagamento seguro', text: 'Pix seguro, confirmação automática.' },
       { icon: '🎧', title: 'Atendimento', text: 'Fale com a gente direto no WhatsApp.' },
     ],
     promoBanner: { active: true, eyebrow: 'POR TEMPO LIMITADO', title: 'Promoção rolando agora', subtitle: 'Até 40% de desconto em vários modelos.', ctaLabel: 'VER OFERTAS', ctaLink: '/catalogo.html' },
@@ -105,7 +105,7 @@
     }
     if (path === '/api/categories') return jsonResponse({ categories: CATS });
     if (path === '/api/settings/home') return jsonResponse(HOME_DEFAULT);
-    if (path === '/api/payments/picpay/create' || path === '/api/payments/picpay/create-cart') {
+    if (/^\/api\/payments\/(pix|picpay)\/create(-cart)?$/.test(path)) {
       return jsonResponse({ error: 'Pagamento indisponível neste preview (sem backend). Publique no Netlify com as variáveis de ambiente configuradas para testar o Pix de verdade.' }, 400);
     }
     return jsonResponse({ error: 'Rota de API não simulada neste preview: ' + path }, 404);

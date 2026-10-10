@@ -45,13 +45,19 @@ main{padding:60px 0}.layout{display:grid;grid-template-columns:1fr 1fr;gap:32px}
 </section>
 </div>
 
-<section id="payment" class="box pix hidden" style="margin-top:32px">
+<section id="payment" class="box pix hidden" style="margin-top:32px" aria-live="polite">
   <div id="paymentStatus" class="status">Aguardando pagamento…</div>
-  <p>Escaneie o QR Code ou use o Pix Copia e Cola.</p>
-  <img id="qr" alt="QR Code Pix">
-  <textarea id="pixCode" class="copy" readonly></textarea>
-  <button id="copy">COPIAR PIX</button>
+  <div id="pixArea">
+    <p>Escaneie o QR Code ou use o Pix Copia e Cola.</p>
+    <img id="qr" alt="QR Code Pix">
+    <div id="expiry" style="color:var(--mute);font-size:.85rem"></div>
+    <textarea id="pixCode" class="copy" readonly></textarea>
+    <button id="copy" type="button">COPIAR PIX</button>
+  </div>
   <div id="paid" class="msg success">Pagamento confirmado! Seu pedido está garantido. ❤️</div>
+  <div id="failed" class="msg" style="background:#fdf2f2;border:1px solid #e8c4c4;color:#8a1f1f"></div>
+  <button id="retry" type="button" class="hidden">GERAR UM NOVO PIX</button>
+  <div style="margin-top:14px;font-size:.78rem;color:var(--mute)">Pedido <span id="orderRef"></span> — guarde esta página para consultar o status depois.</div>
 </section>
 </div></main>
 <script src="/js/mock-api.js"></script>
@@ -61,9 +67,15 @@ main{padding:60px 0}.layout{display:grid;grid-template-columns:1fr 1fr;gap:32px}
 'use strict';
 const qs=new URLSearchParams(location.search), slug=qs.get('produto')||qs.get('slug');
 const cartMode = qs.get('modo')==='carrinho';
+const resumeId = qs.get('pedido');
 const $=id=>document.getElementById(id);
-let product=null, order=null, timer=null;
+let product=null, order=null, timer=null, expiryTimer=null;
 const money=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const TOKEN_KEY='tnzone-checkout-token';
+// Token por tentativa de checkout: se a requisição for reenviada (duplo clique, rede instável),
+// o servidor devolve o mesmo pedido em vez de gerar outra cobrança. Renovado após erro.
+function checkoutToken(){let t=sessionStorage.getItem(TOKEN_KEY);if(!t){t=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(16)+Math.random().toString(16).slice(2)+Math.random().toString(16).slice(2));sessionStorage.setItem(TOKEN_KEY,t)}return t}
+function resetToken(){sessionStorage.removeItem(TOKEN_KEY)}
 function showError(msg){$('error').textContent=msg;$('error').style.display='block'}
 function price(){return Number(product.promo_price!=null?product.promo_price:product.price)}
 function render(){
@@ -95,43 +107,88 @@ function loadCart(){
   $('singleBox').classList.add('hidden');$('cartBox').classList.remove('hidden');
   $('app').classList.remove('hidden');$('loading').classList.add('hidden');
 }
+
+// ---- Painel de pagamento: tudo vem do servidor (dados reais da PromissePay) ----
+function stopTimers(){if(timer){clearInterval(timer);timer=null}if(expiryTimer){clearInterval(expiryTimer);expiryTimer=null}}
+function showExpiry(expiresAt){
+  if(expiryTimer)clearInterval(expiryTimer);
+  if(!expiresAt){$('expiry').textContent='';return}
+  const end=new Date(expiresAt).getTime();
+  const tick=()=>{const left=Math.max(0,Math.floor((end-Date.now())/1000));
+    $('expiry').textContent=left>0?'Este PIX expira em '+String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0'):''};
+  tick();expiryTimer=setInterval(tick,1000);
+}
+function applyOrder(d){
+  order=d;
+  $('orderRef').textContent='#'+String(d.id).slice(0,8);
+  $('paid').style.display='none';$('failed').style.display='none';$('retry').classList.add('hidden');
+  if(d.status==='PAID'){
+    stopTimers();$('pixArea').classList.add('hidden');
+    $('paymentStatus').textContent='Pagamento aprovado';$('paid').style.display='block';resetToken();return;
+  }
+  if(d.status==='PENDING'&&d.pix){
+    $('pixArea').classList.remove('hidden');
+    $('paymentStatus').textContent='Aguardando pagamento…';
+    $('qr').src=d.pix.qrCodeBase64;$('pixCode').value=d.pix.qrCode;showExpiry(d.pix.expiresAt);return;
+  }
+  // EXPIRED / FAILED / ERROR / CANCELED: sem QR, com opção de gerar outro.
+  stopTimers();$('pixArea').classList.add('hidden');
+  const labels={EXPIRED:['PIX expirado','O tempo para pagar este PIX acabou. Nenhum valor foi cobrado.'],
+    FAILED:['Pagamento não concluído','O pagamento foi recusado ou expirou sem ser pago. Nenhum valor foi cobrado.'],
+    ERROR:['Erro no pagamento','Não foi possível concluir este pedido. Nenhum valor foi cobrado.']};
+  const l=labels[d.status]||['Pagamento não concluído','Este pedido não está mais aguardando pagamento.'];
+  $('paymentStatus').textContent=l[0];$('failed').textContent=l[1];$('failed').style.display='block';
+  $('retry').classList.remove('hidden');resetToken();
+}
+function openPayment(d){
+  $('payment').classList.remove('hidden');
+  applyOrder(d);
+  history.replaceState(null,'','?pedido='+encodeURIComponent(d.id));
+  if(d.status==='PENDING')startPolling();
+}
+// O navegador só consulta; quem decide o status é o servidor (webhook + confirmação na API do gateway).
+function startPolling(){
+  if(timer)clearInterval(timer);
+  const check=async()=>{try{
+    const r=await fetch('/api/payments/orders/'+encodeURIComponent(order.id));
+    const d=await r.json();if(!r.ok)return;applyOrder(d);
+  }catch(e){}};
+  timer=setInterval(check,5000);
+}
+$('retry').addEventListener('click',()=>{
+  stopTimers();resetToken();$('payment').classList.add('hidden');
+  history.replaceState(null,'',location.pathname+(cartMode?'?modo=carrinho':(slug?'?produto='+encodeURIComponent(slug):'')));
+  if(!resumeId){window.scrollTo({top:0,behavior:'smooth'})}else{location.href='/catalogo.html'}
+});
 $('form').addEventListener('submit',async e=>{
  e.preventDefault();$('pay').disabled=true;$('pay').textContent='CRIANDO COBRANÇA…';$('error').style.display='none';
  try{
   let r,d;
+  const common={name:$('name').value,cpf:$('cpf').value,email:$('email').value,phone:$('phone').value,additionalData:$('additionalData').value,checkoutToken:checkoutToken()};
   if(cartMode){
    const items=RSShop.getCart().map(it=>({productId:it.productId,quantity:it.quantity,size:it.size,color:it.color}));
-   r=await fetch('/api/payments/picpay/create-cart',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    items,name:$('name').value,cpf:$('cpf').value,email:$('email').value,phone:$('phone').value,
-    additionalData:$('additionalData').value,sessionId:sessionStorage.getItem('rshoes-session-id')||null
-   })});
-   d=await r.json();if(!r.ok)throw new Error(d.error||'Não deu pra gerar o pagamento. Tenta de novo');
+   r=await fetch('/api/payments/pix/create-cart',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({items},common))});
+   d=await r.json();if(!r.ok)throw new Error(d.error||'Não deu pra gerar o pagamento. Tente de novo');
    RSShop.clearCart();
   } else {
-   r=await fetch('/api/payments/picpay/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    productId:product.id,quantity:Number($('quantity').value),name:$('name').value,cpf:$('cpf').value,email:$('email').value,phone:$('phone').value,
-    size:$('size').value,color:$('color').value,additionalData:$('additionalData').value,sessionId:sessionStorage.getItem('rshoes-session-id')||null
-   })});
-   d=await r.json();if(!r.ok)throw new Error(d.error||'Não deu pra gerar o pagamento. Tenta de novo');
+   r=await fetch('/api/payments/pix/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({productId:product.id,quantity:Number($('quantity').value),size:$('size').value,color:$('color').value},common))});
+   d=await r.json();if(!r.ok)throw new Error(d.error||'Não deu pra gerar o pagamento. Tente de novo');
   }
-  order=d;
-  $('payment').classList.remove('hidden');$('qr').src=d.pix.qrCodeBase64||('data:image/png;base64,'+d.pix.qrCodeBase64);
-  $('pixCode').value=d.pix.qrCode||'';$('paymentStatus').textContent='Aguardando pagamento…';startPolling();
- }catch(err){showError(err.message)}
+  openPayment(d);
+ }catch(err){resetToken();showError(err.message)}
  finally{$('pay').disabled=false;$('pay').textContent='GERAR PAGAMENTO PIX'}
 });
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('pixCode').value);$('copy').textContent='PIX COPIADO ✓';setTimeout(()=>$('copy').textContent='COPIAR PIX',1800)}catch(e){$('pixCode').select()}});
-function startPolling(){
- if(timer)clearInterval(timer);
- const check=async()=>{try{const r=await fetch('/api/payments/orders/'+encodeURIComponent(order.id));const d=await r.json();if(!r.ok)return;
-   order=d;
-   if(d.status==='PAID'){clearInterval(timer);$('paymentStatus').textContent='Pagamento confirmado';$('paid').style.display='block';return}
-   if(['EXPIRED','CANCELED','CANCELLED','DENIED','ERROR'].includes(d.status)){clearInterval(timer);$('paymentStatus').textContent='Pagamento '+d.status;return}
-   $('paymentStatus').textContent='Aguardando pagamento…';
- }catch(e){}};
- check();timer=setInterval(check,4000);
+
+// Voltou à página (ou abriu o link do pedido): mostra o estado real consultado no servidor.
+async function resume(){
+  try{
+    const r=await fetch('/api/payments/orders/'+encodeURIComponent(resumeId));const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Pedido não encontrado.');
+    $('loading').classList.add('hidden');openPayment(d);
+  }catch(e){$('loading').textContent=e.message||'Não deu pra consultar o pedido.'}
 }
-if(cartMode){loadCart();}else{load();}
+if(resumeId){resume();}else if(cartMode){loadCart();}else{load();}
 })();
 </script>
 </body>

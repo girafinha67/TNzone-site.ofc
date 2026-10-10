@@ -347,11 +347,11 @@ test('WhatsApp via CallMeBot: monta a URL com texto codificado (fetch falso, sem
   const saved = { fetch: globalThis.fetch, k: process.env.CALLMEBOT_API_KEY, p: process.env.WHATSAPP_OWNER_PHONE };
   let seen;
   globalThis.fetch = async (url) => { seen = url; return { ok: true, status: 200, text: async () => 'Message queued' }; };
-  process.env.CALLMEBOT_API_KEY = 'KEY123'; process.env.WHATSAPP_OWNER_PHONE = '+55 61 98655-3995';
+  process.env.CALLMEBOT_API_KEY = 'KEY123'; process.env.WHATSAPP_OWNER_PHONE = '+55 11 90000-0000';
   try {
     const r = await wa.notifyOwner('Total R$ 10,00 & mais');
     assert.equal(r.sent, true);
-    assert.ok(seen.startsWith('https://api.callmebot.com/whatsapp.php?phone=5561986553995&text='));
+    assert.ok(seen.startsWith('https://api.callmebot.com/whatsapp.php?phone=5511900000000&text='));
     assert.ok(seen.includes('R%24%2010') && seen.includes('%26') && seen.endsWith('&apikey=KEY123'));
   } finally {
     globalThis.fetch = saved.fetch;
